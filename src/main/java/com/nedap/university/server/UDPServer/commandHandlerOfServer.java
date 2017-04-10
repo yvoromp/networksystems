@@ -10,7 +10,7 @@ import java.net.InetAddress;
  */
 
 
-public class commandHandler {
+public class commandHandlerOfServer {
 
     private DatagramSocket serverSocket;
 
@@ -18,16 +18,18 @@ public class commandHandler {
     protected void extractedCommand(String receivedMessage, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPServerSocket){
         serverSocket = UDPServerSocket;
         if(receivedMessage.equals("broadcast")){
-            DatagramPacket returnPacket = makeDatagramPacket(otherIPAddress,clientPort);
+            DatagramPacket returnPacket = makeDatagramPacket(otherIPAddress,clientPort,"hello");
             sendDatagramPacket(returnPacket);
+        }else if(receivedMessage.equals("6666")){
+            sendDatagramPacket(makeDatagramPacket(otherIPAddress,clientPort,"7777"));
         }
 
     }
 
     //make a new datagram packet to send
-    private DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort){
+    private DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort,String serverAnswer){
         byte[] returnData;
-        String returnMessage = "hello";
+        String returnMessage = serverAnswer;
         returnData = returnMessage.getBytes();
         DatagramPacket returnPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
         return returnPacket;
