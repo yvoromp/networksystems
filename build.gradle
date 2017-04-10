@@ -13,7 +13,7 @@ apply plugin: 'application'
 apply plugin: 'org.hidetake.ssh'
 
 
-mainClassName = 'com.nedap.university.Main'
+mainClassName = 'com.nedap.university.server.MainServer'
 version = '0.0.1'
 
 jar {

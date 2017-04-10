@@ -1,15 +1,22 @@
-package com.nedap.university;
+package com.nedap.university.client;
 
-public class Main {
+import com.nedap.university.client.UDPClient.UDPClient;
+
+public class MainClient {
 
     private static boolean keepAlive = true;
     private static boolean running = false;
 
-    private Main() {}
+    private MainClient() {}
 
     public static void main(String[] args) {
         running = true;
-        System.out.println("Hello, Nedap University mannetjes!");
+        System.out.println("Hello, Nedap University");
+        System.out.println("i'm a client");
+
+        UDPClient client = new UDPClient();
+        Thread clientThread = new Thread(client);
+        clientThread.start();
 
         initShutdownHook();
 
