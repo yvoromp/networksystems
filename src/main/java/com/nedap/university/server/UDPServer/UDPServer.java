@@ -12,8 +12,8 @@ import java.net.*;
  */
 public class UDPServer extends Thread{
 
-    DatagramSocket UDPServerSocket = null;
-    commandHandler commandHandler;
+    private MulticastSocket UDPServerSocket = null;
+    private commandHandlerOfServer commandHandlerOfServer;
 
     public void run() {
 
@@ -27,23 +27,24 @@ public class UDPServer extends Thread{
 
         //creating the UDP server socket with the given port number
         try {
-            UDPServerSocket = new DatagramSocket(UDPport);
-        } catch (SocketException e) {
+            UDPServerSocket = new MulticastSocket(UDPport);
+        } catch (IOException e) {
             e.printStackTrace();
         }
         System.out.println("|UDPServer|  Datagram Socket activated on port " + UDPport);
 
         //set up the packet structure for the received packets
-        int dataLength = 1024;
-        byte[] receivedDataBuffer = new byte[dataLength]; //create buffer
-        DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer, receivedDataBuffer.length); //create DGpacket
+        DatagramPacket receivedDatagramPacket;
 
-        //create a commandHandler for received packets
-        commandHandler = new commandHandler();
+        //create a commandHandlerOfServer for received packets
+        commandHandlerOfServer = new commandHandlerOfServer();
 
         while (true) {
             //wait till a packet arrives
             System.out.println("|UDPServer|  Waiting for incoming traffic...");
+            //reset packetStructure
+            receivedDatagramPacket = setUpPacketStructure();
+
             try {
                 UDPServerSocket.receive(receivedDatagramPacket);  //method that blocks until a packet is received
             } catch (IOException e) {
@@ -61,9 +62,18 @@ public class UDPServer extends Thread{
             receivedMessage = receivedMessage.trim();
             System.out.println("|UDPServer|  received message: " + receivedMessage);
 
-            commandHandler.extractedCommand(receivedMessage, otherIPAddress,clientPort,UDPServerSocket);                //extract broadcast message to avoid loop
+            commandHandlerOfServer.extractedCommand(receivedMessage, otherIPAddress,clientPort,UDPServerSocket);                //extract broadcast message to avoid loop
 
         }
+
+    }
+
+    private DatagramPacket setUpPacketStructure(){
+        //set up the packet structure for the received packets
+        int dataLength = 1024;
+        byte[] receivedDataBuffer = new byte[dataLength]; //create buffer
+        DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer,receivedDataBuffer.length); //create DGpacket
+        return receivedDatagramPacket;
 
     }
 

@@ -6,11 +6,15 @@ package com.nedap.university.client.UDPClient;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.HashMap;
 
 /**
  * functions when this side operates as a receiver
  */
 public class UDPClient extends Thread{
+
+    private commandHandlerOfClient commandHandlerOfClient;
+    private HashMap<InetAddress,Integer> connectionsMap;
 
     public void run () {
 
@@ -29,11 +33,11 @@ public class UDPClient extends Thread{
         int serverPortNumber = 5555;
 
         //creating clientSocket that will be used to contact UDPServer
-        DatagramSocket UDPClientSocket = null;
+        MulticastSocket UDPClientSocket = null;
 
         try {
-            UDPClientSocket = new DatagramSocket();
-        } catch (SocketException e) {
+            UDPClientSocket = new MulticastSocket(serverPortNumber);
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -43,14 +47,19 @@ public class UDPClient extends Thread{
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+
+        //init the list where all the connection-objects will be mapped
+        connectionsMap = new HashMap<>();
+
         System.out.println("|UDPClient| broadcasting to " + broadcastIPAddress + " using portnumber " + serverPortNumber);
 
 
+
         /**
-         * while connection is established; send a packet to the UDP server
+         * while connection is established; send a broadcast packet to the UDP server
          */
 
-        String message = "broadcast";                   //message to send
+        String message = "broadcast";                   //message to broadcast
 
         //create a buffer
         byte[] dataToSend;
@@ -64,47 +73,61 @@ public class UDPClient extends Thread{
             e.printStackTrace();
         }
 
-        //set up the packet structure for the received packets
-        int dataLength = 1024;
-        byte[] receivedDataBuffer = new byte[dataLength]; //create buffer
-        DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer,receivedDataBuffer.length); //create DGpacket
+        DatagramPacket receivedDatagramPacket;
+
+        //create a commandHandlerOfClient for received packets
+        commandHandlerOfClient = new commandHandlerOfClient();
+
 
         while(true) {
             //wait till a packet arrives
-            System.out.println("|UDPServer|  Waiting for incoming traffic...");
+            System.out.println("|UDPClient|  Waiting for incoming traffic...");
+            //reset packetStructure
+            receivedDatagramPacket = setUpPacketStructure();
+
             try {
                 UDPClientSocket.receive(receivedDatagramPacket);  //method that blocks until a packet is received
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            //extract the received packet data if it contains a String format
+            //extract the received packet data
             InetAddress otherIPAdress = receivedDatagramPacket.getAddress();            //the IPaddres from the client
-            System.out.println("|UDPServer|  received packet from " + otherIPAdress);
+            System.out.println("|UDPClient|  received packet from " + otherIPAdress);
 
-            int clientPort = receivedDatagramPacket.getPort();                          //the portnumber used by the client to send this packet
+            int serverPort = receivedDatagramPacket.getPort();                          //the portnumber used by the client to send this packet
             String receivedMessage = new String(receivedDatagramPacket.getData());      //create the message that is send
 
             //if the entire buffer isn't used, remove the empty bytes
             receivedMessage = receivedMessage.trim();
-            System.out.println("|UDPServer|  received message: " + receivedMessage);
+            System.out.println("|UDPClient|  received message: " + receivedMessage);
 
-            //send a message back to the the client
-            byte[] returnData;
-            String returnMessage = "thank you for your message";
-            returnData = returnMessage.getBytes();
 
-            DatagramPacket returnPacket = new DatagramPacket(returnData, returnData.length, otherIPAdress, clientPort);
-            try {
-                UDPClientSocket.send(returnPacket);
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
+            commandHandlerOfClient.extractedCommand(this,receivedMessage,otherIPAdress,serverPort,UDPClientSocket);
 
 
         }
 
+
+    }
+
+    public HashMap<InetAddress, Integer> getConnectionsMap() {
+        return connectionsMap;
+    }
+    public void addConnectionToMap(connection newConnection){
+        InetAddress serverAddress = newConnection.getAddress();
+        int port = newConnection.getPort();
+        connectionsMap.put(serverAddress,port);
+        System.out.println(connectionsMap.toString());
+    }
+    private DatagramPacket setUpPacketStructure(){
+        //set up the packet structure for the received packets
+        int dataLength = 1024;
+        byte[] receivedDataBuffer = new byte[dataLength]; //create buffer
+        DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer,receivedDataBuffer.length); //create DGpacket
+        return receivedDatagramPacket;
 
     }
 
