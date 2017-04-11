@@ -4,6 +4,8 @@ package com.nedap.university.server.UDPServer;
  * Created by yvo.romp on 07/04/2017.
  */
 
+import com.nedap.university.packageStructure.packageCreator;
+
 import java.io.IOException;
 import java.net.*;
 
@@ -14,6 +16,7 @@ public class UDPServer extends Thread{
 
     private MulticastSocket UDPServerSocket = null;
     private commandHandlerOfServer commandHandlerOfServer;
+    private packageCreator pCreator;
 
     public void run() {
 
@@ -34,6 +37,8 @@ public class UDPServer extends Thread{
         System.out.println("|UDPServer|  Datagram Socket activated on port " + UDPport);
 
         //set up the packet structure for the received packets
+        //init the packageCreator
+        pCreator = new packageCreator();
         DatagramPacket receivedDatagramPacket;
 
         //create a commandHandlerOfServer for received packets

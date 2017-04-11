@@ -4,6 +4,8 @@ package com.nedap.university.client.UDPClient;
  * Created by yvo.romp on 07/04/2017.
  */
 
+import com.nedap.university.packageStructure.packageCreator;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.HashMap;
@@ -15,6 +17,7 @@ public class UDPClient extends Thread{
 
     private commandHandlerOfClient commandHandlerOfClient;
     private HashMap<InetAddress,Integer> connectionsMap;
+    private packageCreator pCreator;
 
     public void run () {
 
@@ -23,20 +26,20 @@ public class UDPClient extends Thread{
         //creating a name for the serverHost
         String serverHostName = "192.168.40.255";       //rasppinet
         //String serverHostName = "192.168.2.255";        //homenet
-        //String serverHostName = "10.30.18.255";
+        //String serverHostName = "10.30.18.255";          //work
 
 
         //creating the server address
         InetAddress broadcastIPAddress = null;
 
         //creating the portnumber (same number as the UDPServer port)
-        int serverPortNumber = 5555;
+        int clientPortNumber = 5555;
 
         //creating clientSocket that will be used to contact UDPServer
         MulticastSocket UDPClientSocket = null;
 
         try {
-            UDPClientSocket = new MulticastSocket(serverPortNumber);
+            UDPClientSocket = new MulticastSocket(clientPortNumber);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -50,8 +53,10 @@ public class UDPClient extends Thread{
 
         //init the list where all the connection-objects will be mapped
         connectionsMap = new HashMap<>();
+        //init the packageCreator
+        pCreator = new packageCreator();
 
-        System.out.println("|UDPClient| broadcasting to " + broadcastIPAddress + " using portnumber " + serverPortNumber);
+        System.out.println("|UDPClient| broadcasting to " + broadcastIPAddress + " using portnumber " + clientPortNumber);
 
 
 
@@ -59,24 +64,12 @@ public class UDPClient extends Thread{
          * while connection is established; send a broadcast packet to the UDP server
          */
 
-        String message = "broadcast";                   //message to broadcast
-
-        //create a buffer
-        byte[] dataToSend;
-        dataToSend = message.getBytes();
-
-        DatagramPacket packetToSend = new DatagramPacket(dataToSend, dataToSend.length, broadcastIPAddress, serverPortNumber);
-
-        try {
-            UDPClientSocket.send(packetToSend);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         DatagramPacket receivedDatagramPacket;
 
         //create a commandHandlerOfClient for received packets
         commandHandlerOfClient = new commandHandlerOfClient();
+
+        commandHandlerOfClient.sendBroadcastMessage(broadcastIPAddress,clientPortNumber,UDPClientSocket);
 
 
         while(true) {
@@ -101,9 +94,6 @@ public class UDPClient extends Thread{
             //if the entire buffer isn't used, remove the empty bytes
             receivedMessage = receivedMessage.trim();
             System.out.println("|UDPClient|  received message: " + receivedMessage);
-
-
-
 
             commandHandlerOfClient.extractedCommand(this,receivedMessage,otherIPAdress,serverPort,UDPClientSocket);
 

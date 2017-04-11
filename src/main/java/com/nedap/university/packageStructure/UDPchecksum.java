@@ -1,4 +1,4 @@
-package com.nedap.university.client.UDPClient.packageStructure;
+package com.nedap.university.packageStructure;
 
 /**
  * Created by yvo.romp on 10/04/2017.

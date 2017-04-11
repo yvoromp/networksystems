@@ -1,5 +1,9 @@
 package com.nedap.university.server.UDPServer;
 
+import com.nedap.university.client.UDPClient.UDPClient;
+import com.nedap.university.packageStructure.UDPheader;
+import com.nedap.university.packageStructure.packageCreator;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -12,13 +16,20 @@ import java.net.InetAddress;
 
 public class commandHandlerOfServer {
 
-    private DatagramSocket serverSocket;
+    private DatagramSocket clientSocket;
+    private UDPServer server;
+    private com.nedap.university.packageStructure.UDPheader UDPheader;
+    private packageCreator packageC;
+    private int serverPort = 5555;
 
     //deal with the given command by the client
-    protected void extractedCommand(String receivedMessage, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPServerSocket){
-        serverSocket = UDPServerSocket;
+    protected void extractedCommand(UDPServer UDPServer, String receivedMessage, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket){
+        server = UDPServer;
+        clientSocket = UDPClientSocket;
+        cutOfTheHead(receivedMessage);
+
         if(receivedMessage.equals("broadcast")){
-            DatagramPacket returnPacket = makeDatagramPacket(otherIPAddress,clientPort,"hello");
+            DatagramPacket returnPacket = makeDatagramPacket(otherIPAddress,clientPort,"hellotoyou");
             sendDatagramPacket(returnPacket);
         }else if(receivedMessage.equals("6666")){
             sendDatagramPacket(makeDatagramPacket(otherIPAddress,clientPort,"7777"));
@@ -38,9 +49,13 @@ public class commandHandlerOfServer {
     //sends the datagram packet as an answer on the command from the client
     private void sendDatagramPacket(DatagramPacket packetToSend){
         try {
-            serverSocket.send(packetToSend);
+            clientSocket.send(packetToSend);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+    //cuts of the header and leaves the datapart
+    //TODO implement the cutoff and return the data
+    //TODO implement another method where the data is stripped (to discover all headerfields)
 }
