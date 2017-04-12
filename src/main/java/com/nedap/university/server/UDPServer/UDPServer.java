@@ -61,13 +61,8 @@ public class UDPServer extends Thread{
             System.out.println("|UDPServer|  received packet from " + otherIPAddress);
 
             int clientPort = receivedDatagramPacket.getPort();                          //the portnumber used by the client to send this packet
-            String receivedMessage = new String(receivedDatagramPacket.getData());      //create the message that is send
 
-            //if the entire buffer isn't used, remove the empty bytes
-            receivedMessage = receivedMessage.trim();
-            System.out.println("|UDPServer|  received message: " + receivedMessage);
-
-            commandHandlerOfServer.extractedCommand(receivedMessage, otherIPAddress,clientPort,UDPServerSocket);                //extract broadcast message to avoid loop
+            commandHandlerOfServer.extractedCommand(this,receivedDatagramPacket, otherIPAddress,clientPort,UDPServerSocket);                //extract broadcast message to avoid loop
 
         }
 

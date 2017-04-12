@@ -56,7 +56,6 @@ public class UDPClient extends Thread{
         //init the packageCreator
         pCreator = new packageCreator();
 
-        System.out.println("|UDPClient| broadcasting to " + broadcastIPAddress + " using portnumber " + clientPortNumber);
 
 
 
@@ -65,12 +64,13 @@ public class UDPClient extends Thread{
          */
 
         DatagramPacket receivedDatagramPacket;
+        receivedDatagramPacket = setUpPacketStructure();
+
 
         //create a commandHandlerOfClient for received packets
         commandHandlerOfClient = new commandHandlerOfClient();
 
-        commandHandlerOfClient.sendBroadcastMessage(broadcastIPAddress,clientPortNumber,UDPClientSocket);
-
+        commandHandlerOfClient.sendBroadcastMessage(broadcastIPAddress,clientPortNumber,UDPClientSocket, receivedDatagramPacket);
 
         while(true) {
             //wait till a packet arrives
@@ -89,13 +89,8 @@ public class UDPClient extends Thread{
             System.out.println("|UDPClient|  received packet from " + otherIPAdress);
 
             int serverPort = receivedDatagramPacket.getPort();                          //the portnumber used by the client to send this packet
-            String receivedMessage = new String(receivedDatagramPacket.getData());      //create the message that is send
 
-            //if the entire buffer isn't used, remove the empty bytes
-            receivedMessage = receivedMessage.trim();
-            System.out.println("|UDPClient|  received message: " + receivedMessage);
-
-            commandHandlerOfClient.extractedCommand(this,receivedMessage,otherIPAdress,serverPort,UDPClientSocket);
+            commandHandlerOfClient.extractedCommand(this,receivedDatagramPacket,otherIPAdress,serverPort,UDPClientSocket);
 
 
         }
