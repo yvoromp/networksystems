@@ -1,4 +1,4 @@
-package com.nedap.university.packageStructure;
+package com.nedap.university.UDPpackageStructure;
 
 /**
  * Created by yvo.romp on 10/04/2017.

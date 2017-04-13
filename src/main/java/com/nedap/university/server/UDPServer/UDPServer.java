@@ -4,7 +4,7 @@ package com.nedap.university.server.UDPServer;
  * Created by yvo.romp on 07/04/2017.
  */
 
-import com.nedap.university.packageStructure.packageCreator;
+import com.nedap.university.UDPpackageStructure.packageCreator;
 
 import java.io.IOException;
 import java.net.*;

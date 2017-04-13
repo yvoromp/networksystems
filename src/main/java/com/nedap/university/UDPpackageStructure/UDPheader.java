@@ -1,4 +1,4 @@
-package com.nedap.university.packageStructure;
+package com.nedap.university.UDPpackageStructure;
 
 /**
  * Created by yvo.romp on 10/04/2017.
@@ -38,7 +38,6 @@ public class UDPheader {
         byte[] dpBytes = changeIntToByteArray(destPort);
         byte[] lenBytes = changeIntToByteArray(hLength);
         byte[] flagBytes = changeIntToByteArray(flags);
-        System.out.println(Arrays.toString(flagBytes));
         byte[] csBytes = changeIntToByteArray(checksum);
 
         return combineHeaderParts(spBytes, dpBytes, lenBytes, flagBytes, csBytes);
@@ -65,15 +64,10 @@ public class UDPheader {
 
         byte[] headerToSend = new byte[spLen+dpLen+lLen+fLen+csLen];
         System.arraycopy(spBytes,0,headerToSend,0,spLen);
-        System.out.println(Arrays.toString(headerToSend));
         System.arraycopy(dpBytes,0,headerToSend,spLen,dpLen);
-        System.out.println(Arrays.toString(headerToSend));
         System.arraycopy(lenBytes,0,headerToSend,dpLen+spLen,lLen);
-        System.out.println(Arrays.toString(headerToSend));
         System.arraycopy(flagBytes,0,headerToSend,dpLen+spLen+lLen,fLen);
-        System.out.println(Arrays.toString(headerToSend));
         System.arraycopy(csBytes,0,headerToSend,dpLen+spLen+lLen+fLen,csLen);
-        System.out.println(Arrays.toString(headerToSend));
         return headerToSend;
     }
 

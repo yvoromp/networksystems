@@ -1,5 +1,6 @@
 package com.nedap.university.packageStructure;
 
+import com.nedap.university.UDPpackageStructure.UDPheader;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -10,8 +11,8 @@ import static org.junit.Assert.*;
  */
 public class UDPheaderTest {
 
-    private UDPheader UDPheader;
-    private packageCreator packageCreator;
+    private com.nedap.university.UDPpackageStructure.UDPheader UDPheader;
+    private com.nedap.university.UDPpackageStructure.packageCreator packageCreator;
 
     @Before
     public void setUp(){

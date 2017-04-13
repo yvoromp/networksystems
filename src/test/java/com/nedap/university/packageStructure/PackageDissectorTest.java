@@ -1,9 +1,9 @@
 package com.nedap.university.packageStructure;
 
+import com.nedap.university.UDPpackageStructure.PackageDissector;
+import com.nedap.university.UDPpackageStructure.UDPheader;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.DatagramPacket;
 
 import static org.junit.Assert.*;
 

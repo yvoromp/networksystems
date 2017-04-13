@@ -1,4 +1,4 @@
-package com.nedap.university.packageStructure;
+package com.nedap.university.UDPpackageStructure;
 
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
