@@ -4,6 +4,7 @@ package com.nedap.university.client.UDPClient;
  * Created by yvo.romp on 07/04/2017.
  */
 
+import com.nedap.university.FileProtocol.TerminalInputThread;
 import com.nedap.university.UDPpackageStructure.packageCreator;
 
 import java.io.IOException;
@@ -47,15 +48,16 @@ public class UDPClient extends Thread{
 
         DatagramPacket receivedDatagramPacket;
 
+        //create a commandHandlerOfClient for received packets
+        commandHandlerOfClient = new commandHandlerOfClient();
         //start bcthread
         BroadcastThread broadcastThread = new BroadcastThread();
         broadcastThread.start();
+        //starts kbithread
+        TerminalInputThread terminalInputThread = new TerminalInputThread(this);
+        terminalInputThread.start();
+        commandHandlerOfClient.setBroadcastIPAddress(broadcastThread.getBroadcastIP());
 
-        //create a commandHandlerOfClient for received packets
-        commandHandlerOfClient = new commandHandlerOfClient();
-
-
-        //commandHandlerOfClient.sendBroadcastMessage(broadcastIPAddress,clientPortNumber,UDPClientSocket, receivedDatagramPacket);
 
         while(true) {
             //wait till a packet arrives
@@ -75,17 +77,20 @@ public class UDPClient extends Thread{
 
             int serverPort = receivedDatagramPacket.getPort();                          //the portnumber used by the client to send this packet
 
+            if(!connectionsMap.containsKey(otherIPAdress)){
+                connection newConnection = new connection(otherIPAdress,serverPort);
+                addConnectionToMap(newConnection);
+                System.out.println("connection added");
+            }
             commandHandlerOfClient.extractedCommand(this,receivedDatagramPacket,otherIPAdress,serverPort,UDPClientSocket);
 
-
         }
-
-
     }
 
     public HashMap<InetAddress, Integer> getConnectionsMap() {
         return connectionsMap;
     }
+
     public void addConnectionToMap(connection newConnection){
         InetAddress serverAddress = newConnection.getAddress();
         int port = newConnection.getPort();
@@ -101,4 +106,7 @@ public class UDPClient extends Thread{
 
     }
 
+    public commandHandlerOfClient getCommandHandlerOfClient() {
+        return commandHandlerOfClient;
+    }
 }

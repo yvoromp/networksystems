@@ -1,5 +1,7 @@
 package com.nedap.university.client.UDPClient;
 
+import com.nedap.university.server.UDPServer.UDPServer;
+
 import java.net.InetAddress;
 
 /**
@@ -19,9 +21,6 @@ public class connection {
 
     }
 
-    private void addConnectionToMap(InetAddress newFoundAddress, int newFoundPort){
-    }
-
     public InetAddress getAddress() {
         return address;
     }
@@ -36,6 +35,11 @@ public class connection {
     }
     public void setPort(int port) {
         this.port = port;
+    }
+
+    private void addConnectionToMap(InetAddress newFoundAddress, int newFoundPort){
+
+
     }
 
 

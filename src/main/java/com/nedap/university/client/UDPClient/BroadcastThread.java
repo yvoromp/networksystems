@@ -13,6 +13,7 @@ public class BroadcastThread extends Thread{
 
     private commandHandlerOfClient commandHandlerOfClient;
     private String serverHostName = "192.168.40.255";
+    private InetAddress broadcastIP;
     private int clientPortNumber = 5555;
 
 
@@ -41,6 +42,7 @@ public class BroadcastThread extends Thread{
 
         //create a commandHandlerOfClient for received packets
         commandHandlerOfClient = new commandHandlerOfClient();
+        setBroadcastIP(broadcastIPAddress);
 
         DatagramPacket receivedDatagramPacket;
         receivedDatagramPacket = setUpPacketStructure();
@@ -49,7 +51,7 @@ public class BroadcastThread extends Thread{
             System.out.println("BCT sends!");
             commandHandlerOfClient.sendBroadcastMessage(broadcastIPAddress,clientPortNumber,UDPClientSocket, receivedDatagramPacket);
             try {
-                Thread.sleep(5000);
+                Thread.sleep(60000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -63,5 +65,13 @@ public class BroadcastThread extends Thread{
         DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer,receivedDataBuffer.length); //create DGpacket
         return receivedDatagramPacket;
 
+    }
+
+    public InetAddress getBroadcastIP() {
+        return broadcastIP;
+    }
+
+    public void setBroadcastIP(InetAddress broadcastIP) {
+        this.broadcastIP = broadcastIP;
     }
 }

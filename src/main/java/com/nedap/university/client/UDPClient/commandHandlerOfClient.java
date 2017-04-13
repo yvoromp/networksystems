@@ -14,13 +14,15 @@ import java.net.MulticastSocket;
 public class commandHandlerOfClient {
 
     private DatagramSocket serverSocket;
+    private InetAddress broadcastIPAddress;
+    private int clientPort = 5555;
     private UDPClient client;
     private UDPheader UDPheader;
     private packageCreator packageC;
     private PackageDissector packageD;
     private UDPFlags flags;
     private FlagActions flagActions;
-    private int clientPort = 5555;
+
     private boolean isBroadcast = false;
 
     //deepCopy of packet
@@ -82,6 +84,24 @@ public class commandHandlerOfClient {
         }
     }
 
+    public void sendLsMessage(){
+        byte[] returnData;
+        String returnMessage = "lsMessage";
+        returnData = returnMessage.getBytes();
+
+        UDPheader = new UDPheader(clientPort, clientPort, 5, 1001, 0);
+        packageC = new packageCreator();
+        returnData = packageC.packageCreator(UDPheader, returnData);
+        DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, broadcastIPAddress, clientPort);
+        try {
+            serverSocket.send(broadcastPacket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
     //cuts of the header and leaves the datapart
     public void cutOfTheHead(DatagramPacket packet) {
         packageD = new PackageDissector(packet);
@@ -109,6 +129,15 @@ public class commandHandlerOfClient {
     public boolean isBroadcast() {
         return isBroadcast;
     }
+
+    public InetAddress getBroadcastIPAddress() {
+        return broadcastIPAddress;
+    }
+
+    public void setBroadcastIPAddress(InetAddress broadcastIPAddress) {
+        this.broadcastIPAddress = broadcastIPAddress;
+    }
 }
+
 
 
