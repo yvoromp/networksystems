@@ -21,6 +21,8 @@ public class InputToAction implements terminalActions{
             case LS:
                 action = new LSAction(client,order);
                 break;
+            case FILES:
+                action = new FilesAction(client,order);
         }
         return action;
     }

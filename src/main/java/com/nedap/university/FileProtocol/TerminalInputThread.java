@@ -53,7 +53,6 @@ public class TerminalInputThread extends Thread{
     }
 
     public void sendText(String textToSend){
-        //TODO send the text to the terminalActions
         System.out.println("you entered: " + textToSend);
         InputToAction inputToAction = new InputToAction();
         inputToAction.input(client,textToSend);

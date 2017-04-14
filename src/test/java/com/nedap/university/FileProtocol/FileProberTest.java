@@ -19,10 +19,11 @@ public class FileProberTest {
         fileProber = new FileProber();
     }
 
+
     @Test
     public void probingTest() throws IOException, ClassNotFoundException{
         System.out.println("out: ");
-        byte[] out = fileProber.filenamesToSend();
+        byte[] out = fileProber.filenamesToSendIfClient();
         System.out.println("\n");
         System.out.println("in:  ");
         fileProber.filenamesToReceive(out);

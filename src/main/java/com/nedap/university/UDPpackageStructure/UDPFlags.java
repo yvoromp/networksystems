@@ -28,13 +28,14 @@ public class UDPFlags {
     public UDPFlags(commandHandlerOfClient cHandler){
         this.cHandler = cHandler;
     }
+
     public UDPFlags(commandHandlerOfServer sHandler){
         this.sHandler = sHandler;
     }
 
     public int checkForFlags(){
         flagValue = 0;
-        if(isBC || cHandler.isBroadcast()){
+        if(isBC){
             flagValue += BC_FLAG_VALUE;
         }if(isACK){
             flagValue += ACK_FLAG_VAlUE;

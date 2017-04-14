@@ -62,7 +62,11 @@ public class UDPServer extends Thread{
 
             int clientPort = receivedDatagramPacket.getPort();                          //the portnumber used by the client to send this packet
 
-            commandHandlerOfServer.extractedCommand(this,receivedDatagramPacket, otherIPAddress,clientPort,UDPServerSocket);                //extract broadcast message to avoid loop
+            try {
+                commandHandlerOfServer.extractedCommand(this,receivedDatagramPacket, otherIPAddress,clientPort,UDPServerSocket);                //extract broadcast message to avoid loop
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
 

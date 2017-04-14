@@ -27,7 +27,7 @@ public class commandHandlerOfServer {
     private DatagramPacket deepCopyPacket;
 
     //deal with the given command by the client
-    protected void extractedCommand(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket){
+    protected void extractedCommand(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket) throws IOException{
         cutOfTheHead(receivedPacket);
         flags = new UDPFlags(this);
         server = UDPServer;
@@ -36,7 +36,7 @@ public class commandHandlerOfServer {
         flagActions.takeFlagActions(UDPServer,receivedPacket,otherIPAddress,clientPort,UDPClientSocket);
     }
 
-    //make a new datagram packet to send
+    //make a new datagram packet to send with string as data
     public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort,String serverAnswer){
         byte[] returnData;
         String returnMessage = serverAnswer;
@@ -46,6 +46,16 @@ public class commandHandlerOfServer {
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader,returnData);
         DatagramPacket returnPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
+        return returnPacket;
+    }
+
+    //make a new datagram packet to send with byteArray as data
+    public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort,byte[] serverAnswer){
+
+        UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+        packageC = new packageCreator();
+        serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
+        DatagramPacket returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, clientPort);
         return returnPacket;
     }
 

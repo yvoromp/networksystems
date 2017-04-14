@@ -73,22 +73,27 @@ public class PackageDissector {
     public void checkFlags(byte[] fPart){
         int flagValue = ByteBuffer.wrap(fPart).getInt();
         if(flagValue/10000 == 1){
+            System.out.println("received a reqAnswerflag");
             isReqAnswer = true;
         }
         flagValue %= 10000;
         if(flagValue / 1000 == 1){
+            System.out.println("received a requestflag");
             isRequest = true;
         }
         flagValue %= 1000;
         if(flagValue / 100 == 1){
+            System.out.println("received a newportflag");
             isNewPort = true;
         }
         flagValue %=100;
         if(flagValue / 10 == 1){
+            System.out.println("received an ackflag ");
             isACK = true;
         }
         flagValue %= 10;
         if(flagValue / 1 == 1){
+            System.out.println("received a bcflag");
             isBC = true;
         }
     }
@@ -99,5 +104,9 @@ public class PackageDissector {
          isNewPort = false;
          isRequest = false;
          isReqAnswer = false;
+    }
+
+    public byte[] getDataPart() {
+        return dataPart;
     }
 }

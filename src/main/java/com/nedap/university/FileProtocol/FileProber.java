@@ -8,18 +8,22 @@ import java.util.HashMap;
  */
 public class FileProber {
 
-    private File folder = new File("src/clientFolder");
-    private File[] listOfFiles = folder.listFiles();
+    private File Cfolder = new File("src/clientFolder");
+    private File Sfolder = new File("home/pi/serverFolder");
+    private File[] listOfFilesOfClient = Cfolder.listFiles();
+    private File[] listOfFilesOfServer = Sfolder.listFiles();
     private HashMap<Integer, String> fileMap;
 
-
-    public byte[] filenamesToSend() throws IOException{
+    /**
+     * serverpart
+     */
+    public byte[] filenamesToSendIfServer() throws IOException{
         fileMap = new HashMap<>();
 
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile()) {
-                fileMap.put(i+1,listOfFiles[i].getName());
-                System.out.println(i+1 + ".  " + listOfFiles[i].getName());
+        for (int i = 0; i < listOfFilesOfServer.length; i++) {
+            if (listOfFilesOfServer[i].isFile()) {
+                fileMap.put(i+1,listOfFilesOfServer[i].getName());
+                System.out.println(i+1 + ".  " + listOfFilesOfServer[i].getName());
             }
         }
         return serialize(fileMap);
@@ -27,12 +31,15 @@ public class FileProber {
 
     public void filenamesToReceive(byte[] mapAsByteArray) throws IOException, ClassNotFoundException{
         fileMap = (HashMap<Integer,String>) deserialize(mapAsByteArray);
-
+        String bound = "============= LIST OF FILES =============";
+        System.out.println(bound);
             for (Integer i : fileMap.keySet()) {
                 String key = i.toString();
                 String value = fileMap.get(i).toString();
-                System.out.println(key+ ".  " + value);
+                System.out.println(key + ".  " + value);
         }
+        System.out.println(bound+ "\n");
+
     }
 
     public static byte[] serialize(HashMap<Integer, String> files) throws IOException{
@@ -47,4 +54,31 @@ public class FileProber {
         ObjectInputStream oIn = new ObjectInputStream(bIn);
         return oIn.readObject();
     }
+
+    /**
+     * clientpart
+     */
+    public byte[] filenamesToSendIfClient() throws IOException{
+        fileMap = new HashMap<>();
+
+        for (int i = 0; i < listOfFilesOfClient.length; i++) {
+            if (listOfFilesOfClient[i].isFile()) {
+                fileMap.put(i+1,listOfFilesOfClient[i].getName());
+                System.out.println(i+1 + ".  " + listOfFilesOfClient[i].getName());
+            }
+        }
+        return serialize(fileMap);
+    }
+
+    public void printAllFilesOfClient() {
+        String bound = "============= FILES OF CLIENT =============";
+        System.out.println("\n" + bound);
+        for (int i = 0; i < listOfFilesOfClient.length; i++) {
+            if (listOfFilesOfClient[i].isFile()) {
+                System.out.println(i + 1 + ".  " + listOfFilesOfClient[i].getName());
+            }
+        }
+        System.out.println(bound+ "\n");
+    }
+
 }

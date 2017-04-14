@@ -1,11 +1,13 @@
 package com.nedap.university.UDPpackageStructure;
 
+import com.nedap.university.FileProtocol.FileProber;
 import com.nedap.university.client.UDPClient.UDPClient;
 import com.nedap.university.client.UDPClient.commandHandlerOfClient;
 import com.nedap.university.client.UDPClient.connection;
 import com.nedap.university.server.UDPServer.UDPServer;
 import com.nedap.university.server.UDPServer.commandHandlerOfServer;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -28,10 +30,11 @@ public class FlagActions {
     public FlagActions(commandHandlerOfServer commandHandlerOfServer){
         serverHandler = commandHandlerOfServer;
         flags = serverHandler.getFlags();
+        //get info about the values in the received package
         packageDissector = serverHandler.getPackageD();
     }
 
-    public void takeFlagActions(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket){
+    public void takeFlagActions(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket) throws IOException{
 
         if(packageDissector.isBC){
             flags.setBC();
@@ -42,7 +45,9 @@ public class FlagActions {
         if(packageDissector.isRequest){
             flags.setRequest();
             flags.setACK();
-            DatagramPacket returnPacket = serverHandler.makeDatagramPacket(otherIPAddress,clientPort,"");
+            FileProber sProber = new FileProber();
+            byte[] listToSend = sProber.filenamesToSendIfServer();
+            DatagramPacket returnPacket = serverHandler.makeDatagramPacket(otherIPAddress,clientPort,listToSend);
             serverHandler.sendDatagramPacket(returnPacket);
         }
     }
@@ -61,18 +66,28 @@ public class FlagActions {
         //if BC is of own origin
             if (packageDissector.isBC && !packageDissector.isACK) {
                 System.out.println("broadcast has been send to subnet!");
-            } else if (packageDissector.isBC && packageDissector.isACK) {
-                System.out.println("BC reply received!");
-                createNewConnection(otherIPAddress,clientPort);
-            } else {
-                clientHandler.sendDatagramPacket(clientHandler.getDeepCopyPacket());
-                System.out.println("resending package!");
             }
+            if (packageDissector.isBC && packageDissector.isACK) {
+                System.out.println("BC reply received!");
+            }
+            if (packageDissector.isRequest && !packageDissector.isACK){
+                System.out.println("ls request has been send to subnet");
+            }
+            if (packageDissector.isRequest && packageDissector.isACK){
+                System.out.println("request reply for list received!");
+                try {
+                    clientHandler.receiveList(receivedPacket);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+            }
+//            else {
+//                clientHandler.sendDatagramPacket(clientHandler.getDeepCopyPacket());
+//                System.out.println("resending package!");
+//            }
     }
 
-    private void createNewConnection(InetAddress otherIP, int otherPort){
-        connection newConnection = new connection(otherIP,otherPort);
-
-
-    }
 }

@@ -1,5 +1,6 @@
 package com.nedap.university.client.UDPClient;
 
+import com.nedap.university.FileProtocol.FileProber;
 import com.nedap.university.UDPpackageStructure.*;
 
 import java.io.IOException;
@@ -72,8 +73,10 @@ public class commandHandlerOfClient {
         byte[] returnData;
         String returnMessage = "broadcast";
         returnData = returnMessage.getBytes();
+        flags = new UDPFlags(this);
+        flags.setBC();
 
-        UDPheader = new UDPheader(clientPort, clientPortNumber, 5, 1, 0);
+        UDPheader = new UDPheader(clientPort, clientPortNumber, 5, flags.checkForFlags(), 0);
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, broadcastIPAddress, clientPort);
@@ -88,8 +91,10 @@ public class commandHandlerOfClient {
         byte[] returnData;
         String returnMessage = "lsMessage";
         returnData = returnMessage.getBytes();
+        flags = new UDPFlags(this);
+        flags.setRequest();
 
-        UDPheader = new UDPheader(clientPort, clientPort, 5, 1001, 0);
+        UDPheader = new UDPheader(clientPort, clientPort, 5, flags.checkForFlags(), 0);
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, broadcastIPAddress, clientPort);
@@ -100,12 +105,24 @@ public class commandHandlerOfClient {
         }
     }
 
+    public void receiveList(DatagramPacket packet) throws IOException, ClassNotFoundException{
+        FileProber clientFiles = new FileProber();
+        cutOfTheHead(packet);
+        clientFiles.filenamesToReceive(packageD.getDataPart());
+    }
+
+    public void printFiles(){
+        FileProber clientFiles = new FileProber();
+        clientFiles.printAllFilesOfClient();
+    }
+
 
 
     //cuts of the header and leaves the datapart
     public void cutOfTheHead(DatagramPacket packet) {
         packageD = new PackageDissector(packet);
     }
+
     public void makeDeepCopyOfPacket(DatagramPacket packetToSend) {
         deepCopyPacket = packetToSend;
     }

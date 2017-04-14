@@ -10,5 +10,10 @@ package com.nedap.university.FileProtocol;
 
 public interface terminalActions {
 
+    //gives the list of files on the pi
     String LS = "ls";
+
+    //gives the list on own computer
+    String FILES = "files";
+
 }
