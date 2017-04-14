@@ -2,6 +2,7 @@ package com.nedap.university.client.UDPClient;
 
 import com.nedap.university.FileProtocol.FileProber;
 import com.nedap.university.UDPpackageStructure.*;
+import com.nedap.university.utils.IntToByteArray;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -16,6 +17,7 @@ public class commandHandlerOfClient {
 
     private DatagramSocket serverSocket;
     private InetAddress broadcastIPAddress;
+    private InetAddress otherIPAddress;
     private int clientPort = 5555;
     private UDPClient client;
     private UDPheader UDPheader;
@@ -31,6 +33,7 @@ public class commandHandlerOfClient {
 
     //deal with the given command by the client
     protected void extractedCommand(UDPClient UDPclient, DatagramPacket receivedPacket, InetAddress otherIPAddress, int serverPort, DatagramSocket UDPServerSocket) {
+        this.otherIPAddress = otherIPAddress;
         cutOfTheHead(receivedPacket);
         client = UDPclient;
         serverSocket = UDPServerSocket;
@@ -114,6 +117,22 @@ public class commandHandlerOfClient {
     public void printFiles(){
         FileProber clientFiles = new FileProber();
         clientFiles.printAllFilesOfClient();
+    }
+
+    public void sendDownloadMessage(int fileID){
+        IntToByteArray intToByte = new IntToByteArray();
+        byte[] returnData = intToByte.changeIntToByteArray(fileID);
+        flags = new UDPFlags(this);
+        flags.setReqAnswer();
+        UDPheader = new UDPheader(clientPort, clientPort, 5, flags.checkForFlags(), 0);
+        packageC = new packageCreator();
+        returnData = packageC.packageCreator(UDPheader, returnData);
+        DatagramPacket addressedPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
+        try {
+            serverSocket.send(addressedPacket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 

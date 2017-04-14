@@ -16,4 +16,7 @@ public interface terminalActions {
     //gives the list on own computer
     String FILES = "files";
 
+    //
+    String DOWNLOAD = "download";
+
 }

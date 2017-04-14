@@ -23,6 +23,10 @@ public class InputToAction implements terminalActions{
                 break;
             case FILES:
                 action = new FilesAction(client,order);
+                break;
+            case DOWNLOAD:
+                order = splitInputString[1];
+                action = new DownloadAction(client,order);
         }
         return action;
     }
