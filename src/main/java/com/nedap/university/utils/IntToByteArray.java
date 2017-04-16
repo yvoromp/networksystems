@@ -13,4 +13,13 @@ public class IntToByteArray {
         totalByteArray[0] = (byte) ((intValue >> 24) & 0xFF);
         return totalByteArray;
     }
+
+    public byte[] changeIntegerArrayToByteArray(Integer[] integerArray){
+        byte[] packetContents = new byte[integerArray.length];
+        for (int i = 0; i < integerArray.length; i++) {
+            packetContents[i] = (byte) ((integerArray[i] & 0x000000ff));
+        }
+        return packetContents;
+    }
 }
+
