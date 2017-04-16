@@ -42,6 +42,16 @@ public class FileProber {
 
     }
 
+    public File returnFileOfMapWithFilesIfServer(int fileId){
+        HashMap<Integer,File> tempFileMap = new HashMap<>();
+        for (int i = 0; i < listOfFilesOfServer.length; i++) {
+            if (listOfFilesOfServer[i].isFile()) {
+                tempFileMap.put(i+1,listOfFilesOfServer[i]);
+            }
+        }
+        return tempFileMap.get(fileId);
+    }
+
     public static byte[] serialize(HashMap<Integer, String> files) throws IOException{
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         ObjectOutputStream oOut = new ObjectOutputStream(bOut);
@@ -79,6 +89,16 @@ public class FileProber {
             }
         }
         System.out.println(bound+ "\n");
+    }
+
+    public File returnFileOfMapWithFilesIfClient(int fileId){
+        HashMap<Integer,File> tempFileMap = new HashMap<>();
+        for (int i = 0; i < listOfFilesOfClient.length; i++) {
+            if (listOfFilesOfClient[i].isFile()) {
+                tempFileMap.put(i+1,listOfFilesOfClient[i]);
+            }
+        }
+        return tempFileMap.get(fileId);
     }
 
 }
