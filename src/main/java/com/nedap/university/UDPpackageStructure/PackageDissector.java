@@ -32,8 +32,6 @@ public class PackageDissector {
         separateHeaderValues(headerPart);
         checkFlags(fPart);
 
-
-
     }
     public PackageDissector(){
 

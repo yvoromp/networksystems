@@ -16,11 +16,13 @@ public class commandHandlerOfServer {
 
     private DatagramSocket clientSocket;
     private UDPServer server;
-    private com.nedap.university.UDPpackageStructure.UDPheader UDPheader;
+    private UDPheader UDPheader;
     private packageCreator packageC;
     private PackageDissector packageD;
     private UDPFlags flags;
     private FlagActions flagActions;
+    private InetAddress otherIP;
+    private int clientPort;
     private int serverPort = 5555;
 
     //deepCopy of packet
@@ -28,6 +30,8 @@ public class commandHandlerOfServer {
 
     //deal with the given command by the client
     protected void extractedCommand(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket) throws IOException{
+        otherIP = otherIPAddress;
+        this.clientPort = clientPort;
         cutOfTheHead(receivedPacket);
         flags = new UDPFlags(this);
         server = UDPServer;
@@ -98,5 +102,13 @@ public class commandHandlerOfServer {
 
     public UDPFlags getFlags() {
         return flags;
+    }
+
+    public InetAddress getOtherIP() {
+        return otherIP;
+    }
+
+    public int getClientPort() {
+        return clientPort;
     }
 }

@@ -6,6 +6,7 @@ import com.nedap.university.client.UDPClient.commandHandlerOfClient;
 import com.nedap.university.client.UDPClient.connection;
 import com.nedap.university.server.UDPServer.UDPServer;
 import com.nedap.university.server.UDPServer.commandHandlerOfServer;
+import com.nedap.university.slidingWindowProtocol.SwProtocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -49,6 +50,13 @@ public class FlagActions {
             byte[] listToSend = sProber.filenamesToSendIfServer();
             DatagramPacket returnPacket = serverHandler.makeDatagramPacket(otherIPAddress,clientPort,listToSend);
             serverHandler.sendDatagramPacket(returnPacket);
+        }
+        if(packageDissector.isReqAnswer){
+            flags.setReqAnswer();
+            flags.setACK();
+            //databytearray (fileID) to swprotocol
+            SwProtocol swProtocol = new SwProtocol(UDPServer,serverHandler,packageDissector.getDataPart());
+            swProtocol.runAsSenderIfServer();
         }
     }
 
