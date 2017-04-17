@@ -9,7 +9,9 @@ import java.util.HashMap;
 public class FileProber {
 
     private File Cfolder = new File("src/clientFolder");
-    private File Sfolder = new File("home/pi/serverFolder");
+
+    private File Sfolder = new File("home/pi/serverFolder");        //FOR REAL
+    //private File Sfolder = new File("src/clientFolder");    //FOR LOCAL TESTING
     private File[] listOfFilesOfClient = Cfolder.listFiles();
     private File[] listOfFilesOfServer = Sfolder.listFiles();
     private HashMap<Integer, String> fileMap;

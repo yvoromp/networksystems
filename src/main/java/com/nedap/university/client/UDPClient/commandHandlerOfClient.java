@@ -2,6 +2,7 @@ package com.nedap.university.client.UDPClient;
 
 import com.nedap.university.FileProtocol.FileProber;
 import com.nedap.university.UDPpackageStructure.*;
+import com.nedap.university.slidingWindowProtocol.ReceiverThread;
 import com.nedap.university.utils.IntToByteArray;
 
 import java.io.IOException;
@@ -19,12 +20,15 @@ public class commandHandlerOfClient {
     private InetAddress broadcastIPAddress;
     private InetAddress otherIPAddress;
     private int clientPort = 5555;
+    private int serverPort;
     private UDPClient client;
     private UDPheader UDPheader;
     private packageCreator packageC;
     private PackageDissector packageD;
     private UDPFlags flags;
     private FlagActions flagActions;
+    private int downloadPort = 7777;
+    private boolean activeDownload = false;
 
     private boolean isBroadcast = false;
 
@@ -32,14 +36,15 @@ public class commandHandlerOfClient {
     private DatagramPacket deepCopyPacket;
 
     //deal with the given command by the client
-    protected void extractedCommand(UDPClient UDPclient, DatagramPacket receivedPacket, InetAddress otherIPAddress, int serverPort, DatagramSocket UDPServerSocket) {
+    public void extractedCommand(UDPClient UDPclient, DatagramPacket receivedPacket, InetAddress otherIPAddress, int serverPort, DatagramSocket UDPServerSocket) {
         this.otherIPAddress = otherIPAddress;
+        this.serverPort = serverPort;
         cutOfTheHead(receivedPacket);
         client = UDPclient;
         serverSocket = UDPServerSocket;
         flags = new UDPFlags(this);
         flagActions = new FlagActions(this);
-        flagActions.takeFlagActions(UDPclient, receivedPacket, otherIPAddress, clientPort, UDPServerSocket);
+        flagActions.takeFlagActions(UDPclient, receivedPacket, otherIPAddress, serverPort, UDPServerSocket);
 
     }
 
@@ -48,12 +53,28 @@ public class commandHandlerOfClient {
         byte[] returnData;
         String returnMessage = clientAnswer;
         returnData = returnMessage.getBytes();
-
-
-        UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+        if(activeDownload){
+            UDPheader = new UDPheader(downloadPort, serverPort, 5, flags.checkForFlags(), 0);
+        }else{
+            UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+        }
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket returnPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, serverPort);
+        return returnPacket;
+    }
+
+    //make a new datagram packet to send with byteArray as data
+    public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int serverPort,byte[] clientAnswer){
+
+        if(activeDownload){
+            UDPheader = new UDPheader(downloadPort, downloadPort, 5, flags.checkForFlags(), 0);
+        }else{
+            UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+        }
+        packageC = new packageCreator();
+        clientAnswer = packageC.packageCreator(UDPheader,clientAnswer);
+        DatagramPacket returnPacket = new DatagramPacket(clientAnswer, clientAnswer.length, otherIPAddress, serverPort);
         return returnPacket;
     }
 
@@ -124,7 +145,10 @@ public class commandHandlerOfClient {
         byte[] returnData = intToByte.changeIntToByteArray(fileID);
         flags = new UDPFlags(this);
         flags.setReqAnswer();
-        UDPheader = new UDPheader(clientPort, clientPort, 5, flags.checkForFlags(), 0);
+
+        ReceiverThread receiverThread = new ReceiverThread(client,client.getCommandHandlerOfClient(),packageD,flags);
+        receiverThread.start();
+        UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket addressedPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
@@ -170,8 +194,20 @@ public class commandHandlerOfClient {
         return broadcastIPAddress;
     }
 
+    public InetAddress getOtherIPAddress() {
+        return otherIPAddress;
+    }
+
+    public int getClientPort() {
+        return clientPort;
+    }
+
     public void setBroadcastIPAddress(InetAddress broadcastIPAddress) {
         this.broadcastIPAddress = broadcastIPAddress;
+    }
+
+    public void setActiveDownload(boolean activeDownload) {
+        this.activeDownload = activeDownload;
     }
 }
 

@@ -24,12 +24,14 @@ public class commandHandlerOfServer {
     private InetAddress otherIP;
     private int clientPort;
     private int serverPort = 5555;
+    private int downloadPort = 7777;
+    private boolean activeDownload = false;
 
     //deepCopy of packet
     private DatagramPacket deepCopyPacket;
 
     //deal with the given command by the client
-    protected void extractedCommand(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket) throws IOException{
+    public void extractedCommand(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket) throws IOException{
         otherIP = otherIPAddress;
         this.clientPort = clientPort;
         cutOfTheHead(receivedPacket);
@@ -46,7 +48,12 @@ public class commandHandlerOfServer {
         String returnMessage = serverAnswer;
         returnData = returnMessage.getBytes();
 
-        UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+        if(activeDownload){
+            UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),0);
+
+        }else{
+            UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+        }
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader,returnData);
         DatagramPacket returnPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
@@ -56,7 +63,12 @@ public class commandHandlerOfServer {
     //make a new datagram packet to send with byteArray as data
     public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort,byte[] serverAnswer){
 
-        UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+        if(activeDownload){
+            UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),0);
+
+        }else{
+            UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+        }
         packageC = new packageCreator();
         serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
         DatagramPacket returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, clientPort);
@@ -110,5 +122,9 @@ public class commandHandlerOfServer {
 
     public int getClientPort() {
         return clientPort;
+    }
+
+    public void setActiveDownload(boolean activeDownload) {
+        this.activeDownload = activeDownload;
     }
 }
