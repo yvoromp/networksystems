@@ -6,12 +6,14 @@ import com.nedap.university.client.UDPClient.commandHandlerOfClient;
 import com.nedap.university.client.UDPClient.connection;
 import com.nedap.university.server.UDPServer.UDPServer;
 import com.nedap.university.server.UDPServer.commandHandlerOfServer;
+import com.nedap.university.slidingWindowProtocol.SenderThread;
 import com.nedap.university.slidingWindowProtocol.SwProtocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 
 /**
@@ -51,12 +53,16 @@ public class FlagActions {
             DatagramPacket returnPacket = serverHandler.makeDatagramPacket(otherIPAddress,clientPort,listToSend);
             serverHandler.sendDatagramPacket(returnPacket);
         }
-        if(packageDissector.isReqAnswer){
+        if(packageDissector.isReqAnswer && !packageDissector.isACK){
             flags.setReqAnswer();
             flags.setACK();
-            //databytearray (fileID) to swprotocol
-            SwProtocol swProtocol = new SwProtocol(UDPServer,serverHandler,packageDissector.getDataPart());
-            swProtocol.runAsSenderIfServer();
+            serverHandler.setActiveDownload(true);
+
+            SenderThread senderThread = new SenderThread(UDPServer,serverHandler,packageDissector,flags);
+            senderThread.start();
+        }
+        if(packageDissector.isReqAnswer && packageDissector.isACK){
+            System.out.println("ack received on UDPlevel");
         }
     }
 
@@ -91,6 +97,13 @@ public class FlagActions {
                     e.printStackTrace();
                 }
 
+            }
+            if(packageDissector.isReqAnswer && packageDissector.isACK){
+                flags.setReqAnswer();
+                flags.setACK();
+                clientHandler.setActiveDownload(true);
+                SwProtocol swProtocol = new SwProtocol(UDPClient,clientHandler,packageDissector.getDataPart());
+                swProtocol.runAsReceiverIfClient();
             }
 //            else {
 //                clientHandler.sendDatagramPacket(clientHandler.getDeepCopyPacket());

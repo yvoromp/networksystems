@@ -52,8 +52,7 @@ public class getFileContents {
             }
             return fileContents;
         } catch (Exception e) {
-            System.err.println(e.getMessage());
-            System.err.println(e.getStackTrace());
+            System.out.println("no such file yet initialized");
             return null;
         }
 
