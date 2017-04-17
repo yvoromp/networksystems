@@ -14,8 +14,14 @@ public class IntToByteArray {
         return totalByteArray;
     }
 
+
+
+
     public byte[] changeIntegerArrayToByteArray(Integer[] integerArray){
+        System.out.println("1." +integerArray.toString()); //NULLPOINTER?
+        System.out.println("2." +integerArray.length);
         byte[] packetContents = new byte[integerArray.length];
+        System.out.println("3." + packetContents.length);
         for (int i = 0; i < integerArray.length; i++) {
             packetContents[i] = (byte) ((integerArray[i] & 0x000000ff));
         }
