@@ -5,6 +5,7 @@ import com.nedap.university.FileProtocol.FileProber;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by yvo.romp on 15/04/2017.

@@ -26,9 +26,13 @@ public class SwProtocol {
     private Integer[] fileContent;
     private byte[] dataPart;
     private int fileID;
+    private String fileIDName;
 
     private IntToByteArray intToByteArray = new IntToByteArray();
     private ByteToIntArray byteToIntArray = new ByteToIntArray();
+
+    private int highestRecPacket = 0;
+    private int newPacketPosition = 0;
 
     private static final int DATASIZE = 1000;
 
@@ -43,8 +47,8 @@ public class SwProtocol {
         this.dataPart = dataPart;
         getFileContents getFileContents = new getFileContents();
         fileID = ByteBuffer.wrap(dataPart).getInt();
-        System.out.println("SWFileid:  " + fileID);
-        Integer [] fileContents = getFileContents.getFileContentsIfServer(fileID);
+        System.out.println("SWFile ID:  " + fileID);
+        Integer [] fileContents = getFileContents.getFileContentsIfServer(this.fileID);
         fileContent = fileContents;
     }
 
@@ -58,7 +62,12 @@ public class SwProtocol {
         this.clientHandler = clientHandler;
         this.dataPart = dataPart;
         getFileContents getFileContents = new getFileContents();
-        getFileContents.getFileContentsIfClient(this.fileID);
+        fileID = -ByteBuffer.wrap(dataPart).getInt();
+        System.out.println("SWFile ID:  " + fileID);
+        Integer[] fileContents = getFileContents.getFileContentsIfClient(this.fileID);
+        fileContent = fileContents;
+        //TODO implements
+        //setDataPart(clientHandler.getPackageD().getDataPart());
     }
 
 
@@ -97,6 +106,44 @@ public class SwProtocol {
 
     public void runAsReceiverIfClient(){
         System.out.println("receiving files......");
+
+        boolean keepGoing = true;
+        while(keepGoing){
+
+            Integer[] recValue = byteToIntArray.ByteToIntArray(dataPart);
+            int packetIndexNumber = recValue[0].intValue();
+            //TODO [1] & [2] (ack & seq)
+            System.out.println("Received packet, length = "+dataPart.length+"  first byte = "+packetIndexNumber);
+
+            //append the packet's data part - header to the fileContentsArray
+            if(packetIndexNumber > highestRecPacket){
+                highestRecPacket = packetIndexNumber;
+            }
+            if(!packetMap.keySet().contains(packetIndexNumber)){
+                Integer[] packetData = byteToIntArray.ByteToIntArray(dataPart);
+                packetData = Arrays.copyOfRange(packetData,1,packetData.length);
+                packetMap.put(packetIndexNumber,packetData);
+            }
+            sendAcknowledgementIfClient(packetIndexNumber);
+
+            if(!allPacketsReceived(packetMap,highestRecPacket)&& packetMap.keySet().size() == Collections.max(packetMap.keySet())){
+                System.out.println("all packets received!!");
+                keepGoing = false;
+                buildFile();
+            }
+             //wait 10ms before trying again
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    keepGoing = false;
+                }
+
+        }
+
+    }
+
+    public void runAsReceiverIfServer(){
+        System.out.println("receiving files......");
         int highestRecPacket = 0;
         int newPacketPosition = 0;
 
@@ -115,18 +162,18 @@ public class SwProtocol {
                 packetData = Arrays.copyOfRange(packetData,1,packetData.length);
                 packetMap.put(packetIndexNumber,packetData);
             }
-            sendAcknowledgementIfClient(packetIndexNumber);
+            sendAcknowledgementIfServer(packetIndexNumber);
 
             if(!allPacketsReceived(packetMap,highestRecPacket)&& packetMap.keySet().size() == Collections.max(packetMap.keySet())){
                 System.out.println("all packets received!!");
                 keepGoing = false;
             }
-             //wait 10ms before trying again
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    keepGoing = false;
-                }
+            //wait 10ms before trying again
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                keepGoing = false;
+            }
 
         }
         buildFile();
@@ -154,7 +201,7 @@ public class SwProtocol {
             newPacketPosition = newPacketPosition + packetMap.get(index).length;
         }
         //write as file to outputMap
-        concatToFile(fileContents,fileID);
+        concatToFileIfClient(fileContents,fileIDName);
     }
 
     private void sendAcknowledgementIfClient(int packetIndexNumber) {
@@ -164,7 +211,14 @@ public class SwProtocol {
         System.out.println("Send ACK for received packetnumber = " + packetIndexNumber);
     }
 
-    private void concatToFile(Integer[] fileContent, int id){
+    private void sendAcknowledgementIfServer(int packetIndexNumber) {
+        Integer[] ackPacket = createAckPacket(packetIndexNumber);
+        byte[] packet = intToByteArray.changeIntegerArrayToByteArray(ackPacket);
+        sendToOtherLayerIfServer(packet);
+        System.out.println("Send ACK for received packetnumber = " + packetIndexNumber);
+    }
+
+    private void concatToFileIfClient(Integer[] fileContent, String id){
         SetFileContents.setFileContents(fileContent,id);
     }
 
@@ -174,13 +228,13 @@ public class SwProtocol {
 
     public void sendToOtherLayerIfClient(byte[] packet){
         clientHandler.setActiveDownload(true);
-        DatagramPacket totalPacket = clientHandler.makeDatagramPacket(clientHandler.getOtherIPAddress(),clientHandler.getClientPort(),packet);
+        DatagramPacket totalPacket = clientHandler.makeDatagramPacket(clientHandler.getOtherIPAddress(),clientHandler.getDownloadPort(),packet);
         clientHandler.sendDatagramPacket(totalPacket);
     }
 
     public void sendToOtherLayerIfServer(byte[] packet){
         serverHandler.setActiveDownload(true);
-        DatagramPacket totalPacket = serverHandler.makeDatagramPacket(serverHandler.getOtherIP(),serverHandler.getClientPort(),packet);
+        DatagramPacket totalPacket = serverHandler.makeDatagramPacket(serverHandler.getOtherIP(),serverHandler.getDownloadPort(),packet);
         serverHandler.sendDatagramPacket(totalPacket);
     }
 
@@ -216,5 +270,13 @@ public class SwProtocol {
 
     public commandHandlerOfClient getClientHandler() {
         return clientHandler;
+    }
+
+    public void setFileIDName(String fileIDName) {
+        this.fileIDName = fileIDName;
+    }
+
+    public void setDataPart(byte[] dataPart) {
+        this.dataPart = dataPart;
     }
 }

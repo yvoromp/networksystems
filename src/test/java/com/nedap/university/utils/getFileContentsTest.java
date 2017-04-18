@@ -53,10 +53,23 @@ public class getFileContentsTest {
 
         Byte ex = packetToSend[0];
         System.out.println(ex.intValue());
+    }
+    @Test
+    public void testIntToByteArray(){
+        int value = -5;
+        IntToByteArray intToByteArray = new IntToByteArray();
+        byte[] send = intToByteArray.changeIntToByteArray(value);
 
+        ByteToIntArray byteToIntArray = new ByteToIntArray();
+        Integer[] recValue = byteToIntArray.ByteToIntArray(send);
+        assertEquals(value,recValue[3].intValue());
+
+        byte[] arr = new byte[5];
+        arr[0] = -84;
+        byteToIntArray.ByteToIntArray(arr);
+        System.out.println(arr[0]);
 
 
     }
-
 
 }

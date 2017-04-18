@@ -10,6 +10,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.HashMap;
 
 /**
  * Created by yvo.romp on 10/04/2017.
@@ -17,6 +18,7 @@ import java.net.MulticastSocket;
 public class commandHandlerOfClient {
 
     private DatagramSocket serverSocket;
+    private DatagramSocket downloadSocket;
     private InetAddress broadcastIPAddress;
     private InetAddress otherIPAddress;
     private int clientPort = 5555;
@@ -27,8 +29,10 @@ public class commandHandlerOfClient {
     private PackageDissector packageD;
     private UDPFlags flags;
     private FlagActions flagActions;
+    private HashMap lastRequestedFileList;
     private int downloadPort = 7777;
     private boolean activeDownload = false;
+    private boolean activeUpload = false;
 
     private boolean isBroadcast = false;
 
@@ -66,15 +70,18 @@ public class commandHandlerOfClient {
 
     //make a new datagram packet to send with byteArray as data
     public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int serverPort,byte[] clientAnswer){
-
+        DatagramPacket returnPacket;
         if(activeDownload){
             UDPheader = new UDPheader(downloadPort, downloadPort, 5, flags.checkForFlags(), 0);
+            packageC = new packageCreator();
+            clientAnswer = packageC.packageCreator(UDPheader,clientAnswer);
+            returnPacket = new DatagramPacket(clientAnswer, clientAnswer.length, otherIPAddress, downloadPort);
         }else{
             UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+            packageC = new packageCreator();
+            clientAnswer = packageC.packageCreator(UDPheader,clientAnswer);
+            returnPacket = new DatagramPacket(clientAnswer, clientAnswer.length, otherIPAddress, serverPort);
         }
-        packageC = new packageCreator();
-        clientAnswer = packageC.packageCreator(UDPheader,clientAnswer);
-        DatagramPacket returnPacket = new DatagramPacket(clientAnswer, clientAnswer.length, otherIPAddress, serverPort);
         return returnPacket;
     }
 
@@ -84,11 +91,18 @@ public class commandHandlerOfClient {
         makeDeepCopyOfPacket(packetToSend);
         //resets the flag status'
         flags.resetFlags();
-
-        try {
-            serverSocket.send(packetToSend);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(activeDownload){
+            try {
+                downloadSocket.send(packetToSend);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }else{
+            try {
+                serverSocket.send(packetToSend);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -133,6 +147,7 @@ public class commandHandlerOfClient {
         FileProber clientFiles = new FileProber();
         cutOfTheHead(packet);
         clientFiles.filenamesToReceive(packageD.getDataPart());
+        setLastRequestedFileList(clientFiles.getFileMap());
     }
 
     public void printFiles(){
@@ -141,12 +156,13 @@ public class commandHandlerOfClient {
     }
 
     public void sendDownloadMessage(int fileID){
+        String fileName = client.getCommandHandlerOfClient().getLastRequestedFileList().get(fileID).toString();
         IntToByteArray intToByte = new IntToByteArray();
         byte[] returnData = intToByte.changeIntToByteArray(fileID);
         flags = new UDPFlags(this);
         flags.setReqAnswer();
 
-        ReceiverThread receiverThread = new ReceiverThread(client,client.getCommandHandlerOfClient(),packageD,flags);
+        ReceiverThread receiverThread = new ReceiverThread(client,client.getCommandHandlerOfClient(),packageD,flags,fileName);
         receiverThread.start();
         UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
         packageC = new packageCreator();
@@ -154,6 +170,27 @@ public class commandHandlerOfClient {
         DatagramPacket addressedPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
         try {
             serverSocket.send(addressedPacket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendUploadMessage(int fileID){
+        System.out.println("Send upload request...");
+        IntToByteArray intToByteArray = new IntToByteArray();
+        byte[] returnData = intToByteArray.changeIntToByteArray(-fileID);
+        flags = new UDPFlags(this);
+        flags.setReqAnswer();
+
+        //set the download on active to seperate flagactions
+        setActiveUpload(true);
+
+        UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+        packageC = new packageCreator();
+        returnData = packageC.packageCreator(UDPheader, returnData);
+        DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
+        try {
+            serverSocket.send(broadcastPacket);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -202,12 +239,40 @@ public class commandHandlerOfClient {
         return clientPort;
     }
 
+    public int getDownloadPort() {
+        return downloadPort;
+    }
+
+    public void setDownloadSocket(DatagramSocket downloadSocket) {
+        this.downloadSocket = downloadSocket;
+    }
+
     public void setBroadcastIPAddress(InetAddress broadcastIPAddress) {
         this.broadcastIPAddress = broadcastIPAddress;
     }
 
     public void setActiveDownload(boolean activeDownload) {
         this.activeDownload = activeDownload;
+    }
+
+    public boolean isActiveDownload() {
+        return activeDownload;
+    }
+
+    public boolean isActiveUpload() {
+        return activeUpload;
+    }
+
+    public void setActiveUpload(boolean activeUpload) {
+        this.activeUpload = activeUpload;
+    }
+
+    public HashMap getLastRequestedFileList() {
+        return lastRequestedFileList;
+    }
+
+    public void setLastRequestedFileList(HashMap lastRequestedFileList) {
+        this.lastRequestedFileList = lastRequestedFileList;
     }
 }
 

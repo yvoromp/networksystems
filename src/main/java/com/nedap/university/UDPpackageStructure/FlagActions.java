@@ -6,8 +6,10 @@ import com.nedap.university.client.UDPClient.commandHandlerOfClient;
 import com.nedap.university.client.UDPClient.connection;
 import com.nedap.university.server.UDPServer.UDPServer;
 import com.nedap.university.server.UDPServer.commandHandlerOfServer;
+import com.nedap.university.slidingWindowProtocol.ReceiverThread;
 import com.nedap.university.slidingWindowProtocol.SenderThread;
 import com.nedap.university.slidingWindowProtocol.SwProtocol;
+import com.nedap.university.utils.ByteToIntArray;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -39,7 +41,7 @@ public class FlagActions {
 
     public void takeFlagActions(UDPServer UDPServer, DatagramPacket receivedPacket, InetAddress otherIPAddress, int clientPort, DatagramSocket UDPClientSocket) throws IOException{
 
-        if(packageDissector.isBC){
+        if(packageDissector.isBC && !packageDissector.isACK){
             flags.setBC();
             flags.setACK();
             DatagramPacket returnPacket = serverHandler.makeDatagramPacket(otherIPAddress,clientPort,"hellotoyou");
@@ -58,11 +60,17 @@ public class FlagActions {
             flags.setACK();
             serverHandler.setActiveDownload(true);
 
-            SenderThread senderThread = new SenderThread(UDPServer,serverHandler,packageDissector,flags);
-            senderThread.start();
+            if(isDownloadFromClient()){
+                SenderThread senderThread = new SenderThread(UDPServer,serverHandler,packageDissector,flags);
+                senderThread.start();
+            }else{
+                //ReceiverThread receiverThread = new ReceiverThread(UDPServer,serverHandler,packageDissector,flags);
+                //receiverThread.start();
+            }
+
         }
         if(packageDissector.isReqAnswer && packageDissector.isACK){
-            System.out.println("ack received on UDPlevel");
+            System.out.println("ack received on applicationlevel");
         }
     }
 
@@ -98,17 +106,40 @@ public class FlagActions {
                 }
 
             }
-            if(packageDissector.isReqAnswer && packageDissector.isACK){
+            if(packageDissector.isReqAnswer && packageDissector.isACK) {
                 flags.setReqAnswer();
                 flags.setACK();
-                clientHandler.setActiveDownload(true);
-                SwProtocol swProtocol = new SwProtocol(UDPClient,clientHandler,packageDissector.getDataPart());
-                swProtocol.runAsReceiverIfClient();
+                //TODO set ico upload the activedown on true (check same object!!)
+                if (clientHandler.isActiveUpload()) {
+                    //TODO mirror behavior
+                    System.out.println("flagactions - mirror");
+                    SwProtocol swProtocol = new SwProtocol(UDPClient, clientHandler, packageDissector.getDataPart());
+                    swProtocol.runAsReceiverIfClient();
+                } else {
+//                    clientHandler.setActiveDownload(true);
+//                    SwProtocol swProtocol = new SwProtocol(UDPClient, clientHandler, packageDissector.getDataPart());
+//                    swProtocol.runAsReceiverIfClient();
+                }
             }
 //            else {
 //                clientHandler.sendDatagramPacket(clientHandler.getDeepCopyPacket());
 //                System.out.println("resending package!");
 //            }
+    }
+
+    private boolean isDownloadFromClient(){
+        //check for -fileid or +fileid  (upload or download)
+        boolean isDownload;
+        byte[] byteArr = packageDissector.getDataPart();
+        ByteToIntArray byteToIntArray = new ByteToIntArray();
+        Integer[] recArr = byteToIntArray.ByteToIntArray(byteArr);
+        int fileID = recArr[3].intValue();
+        if(fileID > 0){
+            isDownload = true;
+        }else{
+            isDownload = false;
+        }
+        return isDownload;
     }
 
 }

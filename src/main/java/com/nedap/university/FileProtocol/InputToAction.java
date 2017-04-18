@@ -15,18 +15,22 @@ public class InputToAction implements terminalActions{
     public Action input(UDPClient client, String textFromTerminal){
         Action action = null;
         String[] splitInputString = textFromTerminal.split(" ");
-        String order = splitInputString[0];
+        String commandToGive = splitInputString[0];
 
-        switch (order){
+        switch (commandToGive){
             case LS:
-                action = new LSAction(client,order);
+                action = new LSAction(client,commandToGive);
                 break;
             case FILES:
-                action = new FilesAction(client,order);
+                action = new FilesAction(client,commandToGive);
                 break;
             case DOWNLOAD:
-                order = splitInputString[1];
-                action = new DownloadAction(client,order);
+                commandToGive = splitInputString[1];
+                action = new DownloadAction(client,commandToGive);
+                break;
+            case UPLOAD:
+                commandToGive = splitInputString[1];
+                action = new UploadAction(client,commandToGive);
         }
         return action;
     }

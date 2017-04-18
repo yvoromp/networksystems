@@ -23,8 +23,10 @@ public class SenderThread extends Thread {
     private commandHandlerOfClient commandHandlerOfClient;
     private PackageDissector packageDissector;
     private UDPFlags udpFlags;
+    private boolean runAsServer;
 
     public SenderThread(UDPServer udpServer, commandHandlerOfServer commandHandlerOfServer, PackageDissector packageDissector, UDPFlags flags){
+        runAsServer = true;
         this.udpServer = udpServer;
         this.commandHandlerOfServer = commandHandlerOfServer;
         this.packageDissector = packageDissector;
@@ -33,6 +35,7 @@ public class SenderThread extends Thread {
     }
 
     public SenderThread(UDPClient udpClient,commandHandlerOfClient commandHandlerOfClient, PackageDissector packageDissector, UDPFlags flags){
+        runAsServer = false;
         this.udpClient = udpClient;
         this.commandHandlerOfClient = commandHandlerOfClient;
         this.packageDissector = packageDissector;
@@ -41,8 +44,31 @@ public class SenderThread extends Thread {
     }
 
     public void run(){
+        if(runAsServer){
+            runThreadAsServer();
+        }else{
+            runThreadAsClient();
+        }
+    }
+
+    public void runThreadAsClient(){
+
+
+    }
+
+    public void runThreadAsServer(){
         SwProtocol swProtocol = new SwProtocol(udpServer,commandHandlerOfServer,packageDissector.getDataPart());
-        swProtocol.setFileID(ByteBuffer.wrap(packageDissector.getDataPart()).getInt());
-        swProtocol.runAsSenderIfServer();
+            System.out.println("|ST| : running");
+            swProtocol.setFileID(ByteBuffer.wrap(packageDissector.getDataPart()).getInt());
+            swProtocol.runAsSenderIfServer();
+    }
+
+
+    private DatagramPacket setUpPacketStructure(){
+        //set up the packet structure for the received packets
+        int dataLength = 1024;
+        byte[] receivedDataBuffer = new byte[dataLength]; //create buffer
+        DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer,receivedDataBuffer.length); //create DGpacket
+        return receivedDatagramPacket;
     }
 }

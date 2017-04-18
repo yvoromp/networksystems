@@ -103,4 +103,16 @@ public class FileProber {
         return tempFileMap.get(fileId);
     }
 
+
+    public String probeForFilenameClientMap(int fileID){
+        return listOfFilesOfClient[fileID-1].getName();
+    }
+
+    public String probeForFilenameServerMap(int fileID){
+        return fileMap.get(fileID);
+    }
+
+    public HashMap<Integer, String> getFileMap() {
+        return fileMap;
+    }
 }

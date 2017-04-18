@@ -9,9 +9,9 @@ import java.io.FileOutputStream;
 public class SetFileContents {
 
     //writes to clientfolder
-    public static void setFileContents(Integer[] fileContents, int id) {
+    public static void setFileContents(Integer[] fileContents, String id) {
         System.out.println("FILE IS BEING BUILD!");
-        File downloadedFile = new File(String.format("src/clientFolder/downloadedFile%d",id));
+        File downloadedFile = new File(String.format("src/clientFolder/%s",id));
         try (FileOutputStream fileStream = new FileOutputStream(downloadedFile)) {
             for (Integer fileContent : fileContents) {
                 fileStream.write(fileContent);

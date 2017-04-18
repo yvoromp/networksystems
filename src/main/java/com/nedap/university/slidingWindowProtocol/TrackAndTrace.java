@@ -1,11 +1,14 @@
 package com.nedap.university.slidingWindowProtocol;
 
+import com.nedap.university.utils.ByteToIntArray;
 import com.nedap.university.utils.IntToByteArray;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +27,7 @@ public class TrackAndTrace {
     private Set<Integer> receivedAckSet;
     private Map<Integer, Boolean> ackGivenForPacket;
     private IntToByteArray intToByteArray = new IntToByteArray();
+    private ByteToIntArray byteToIntArray = new ByteToIntArray();
 
     private static final int WINDOWSIZE = 250;
     private static final int DATASIZE = 500;
@@ -47,7 +51,7 @@ public class TrackAndTrace {
             //sets the lower and upperbound of the senderwindow
             if(receivedAckSet.isEmpty()){
                 lowerBound = 1;
-                upperBound = WINDOWSIZE;
+                upperBound = Math.min(WINDOWSIZE,totalNumberOfPackets);
             }else{
                 lowerBound = setLowerBound(receivedAckSet);
                 upperBound = setUpperBound(receivedAckSet,totalNumberOfPackets);
@@ -97,31 +101,36 @@ public class TrackAndTrace {
 
     private void sendPacketsIfServer(){
         createSocket();
+        swProtocol.getServerHandler().setDownloadSocket(downloadSocket);
         for(packetCounter = lowerBound; packetCounter <= upperBound ;packetCounter++){
+            System.out.println("packetcounter:  " +packetCounter);
             //packet isn't acknowledged yet and (isn't added to the map or when added false)
             if(!receivedAckSet.contains(packetCounter) && (!ackGivenForPacket.containsKey(packetCounter) || ackGivenForPacket.get(packetCounter))){
                 // send/resend packet
                 filePointer = DATASIZE * (packetCounter -1) ;
                 Integer[] pkt = createSwPacket();
                 byte[] packet = intToByteArray.changeIntegerArrayToByteArray(pkt);
+                System.out.println(packet);
                 System.out.println("Sent one packet with header=" + pkt[0]);
                 swProtocol.sendToOtherLayerIfServer(packet);
                 //wait a second for acks after sending each packet
-                checkForAcks(receivedAckSet);
+                receivedAckSet = checkForAcks(receivedAckSet);
+
             }
         }
+        System.out.println("out of forloop");
 
     }
 
     private void sendPacketsIfClient(){
-        for(packetCounter = 0; packetCounter < upperBound ;packetCounter++){
+        for(packetCounter = 0; packetCounter <= upperBound ;packetCounter++){
             //packet isn't acknowledged yet and (isn't added to the map or when added false)
             if(!receivedAckSet.contains(packetCounter) && (!ackGivenForPacket.containsKey(packetCounter) || ackGivenForPacket.get(packetCounter))){
                 // send/resend packet
                 filePointer = DATASIZE * packetCounter;
                 Integer[] pkt = createSwPacket();
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -147,22 +156,27 @@ public class TrackAndTrace {
 
     private Set<Integer> checkForAcks(Set<Integer> receivedAcks) {
         System.out.println("check for acks");
-        DatagramPacket receivedDatagramPacket = null;
+        DatagramPacket receivedDatagramPacket = setUpPacketStructure();
         for (int i = 1; i <= NUMBEROFACKCHECKS; i++) {
-            try {
-                Thread.sleep(100);
                 try {
                     downloadSocket.receive(receivedDatagramPacket);  //method that blocks until an ACKpacket is received
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                if (ackGivenForPacket.get(i) != null && ackGivenForPacket.get(i)) {
-                    receivedAcks.add(i);
+                int ackNr = extractAck(receivedDatagramPacket);
+                if(ackGivenForPacket.size() != 0 ) {
+                    receivedAcks.add(ackNr);
+                    ackGivenForPacket.put(ackNr, true);
+                    System.out.println("received ACK: " + ackNr);
                     return receivedAcks;
+                }else if(!ackGivenForPacket.keySet().contains(ackNr)) {
+                    receivedAcks.add(ackNr);
+                    ackGivenForPacket.put(ackNr,true);
+                    System.out.println("received ACK: " +ackNr);
+                    return receivedAcks;
+                }else{
+                    System.out.println("blabloebla");
                 }
-            } catch (InterruptedException e) {
-                break;
-            }
         }
         return receivedAcks;
     }
@@ -175,6 +189,34 @@ public class TrackAndTrace {
             e.printStackTrace();
         }
         this.downloadSocket = downloadSocket;
+    }
+
+    private DatagramPacket setUpPacketStructure(){
+        //set up the packet structure for the received packets
+        int dataLength = 1024;
+        byte[] receivedDataBuffer = new byte[dataLength]; //create buffer
+        DatagramPacket receivedDatagramPacket = new DatagramPacket(receivedDataBuffer,receivedDataBuffer.length); //create DGpacket
+        return receivedDatagramPacket;
+
+    }
+    private Integer extractAck(DatagramPacket receivedPacket){
+        //extract the received packet data
+        InetAddress otherIPAddress = receivedPacket.getAddress();            //the IPaddres from the client
+        System.out.println("|UDPServer|  received packet from " + otherIPAddress);
+
+        int serverPort = receivedPacket.getPort();                          //the portnumber used by the client to send this packet
+        try {
+            swProtocol.getServerHandler().extractedCommand(swProtocol.getServer(),receivedPacket, otherIPAddress,serverPort,downloadSocket);                //extract broadcast message to avoid loop
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        swProtocol.setDataPart(swProtocol.getServerHandler().getPackageD().getDataPart());
+        byte[] recACKData = swProtocol.getServerHandler().getPackageD().getDataPart();
+
+        Integer[] recValue = byteToIntArray.ByteToIntArray(recACKData);
+        int packetIndexNumber = recValue[0].intValue();
+        System.out.println("PIN " + packetIndexNumber);
+        return packetIndexNumber;
     }
 
 }

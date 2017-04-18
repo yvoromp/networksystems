@@ -15,6 +15,7 @@ import java.net.InetAddress;
 public class commandHandlerOfServer {
 
     private DatagramSocket clientSocket;
+    private DatagramSocket downloadSocket;
     private UDPServer server;
     private UDPheader UDPheader;
     private packageCreator packageC;
@@ -62,16 +63,19 @@ public class commandHandlerOfServer {
 
     //make a new datagram packet to send with byteArray as data
     public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort,byte[] serverAnswer){
-
+        DatagramPacket returnPacket;
         if(activeDownload){
             UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),0);
+            packageC = new packageCreator();
+            serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
+            returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, downloadPort);
 
         }else{
             UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+            packageC = new packageCreator();
+            serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
+            returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, clientPort);
         }
-        packageC = new packageCreator();
-        serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
-        DatagramPacket returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, clientPort);
         return returnPacket;
     }
 
@@ -81,11 +85,20 @@ public class commandHandlerOfServer {
         makeDeepCopyOfPacket(packetToSend);
         //reset the flags to false
         flags.resetFlags();
-        try {
-            clientSocket.send(packetToSend);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(activeDownload){
+            try {
+                downloadSocket.send(packetToSend);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }else{
+            try {
+                clientSocket.send(packetToSend);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
     //cuts of the header and leaves the datapart
@@ -124,7 +137,17 @@ public class commandHandlerOfServer {
         return clientPort;
     }
 
+    public int getDownloadPort() {
+        return downloadPort;
+    }
+
+    public void setDownloadSocket(DatagramSocket downloadSocket) {
+        this.downloadSocket = downloadSocket;
+    }
+
     public void setActiveDownload(boolean activeDownload) {
         this.activeDownload = activeDownload;
     }
+
+
 }
