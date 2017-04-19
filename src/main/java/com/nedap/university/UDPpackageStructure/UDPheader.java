@@ -16,7 +16,7 @@ public class UDPheader {
     private int destPort;
     private int hLength;
     private int flags;
-    private int checksum;
+    private byte[] checksum;
 
     public byte[] totalBytesArray;
 
@@ -24,7 +24,7 @@ public class UDPheader {
     public UDPheader(){
     }
 
-    public UDPheader(int sourcePort, int destPort, int length, int flags, int checksum){
+    public UDPheader(int sourcePort, int destPort, int length, int flags, byte[] checksum){
         this.sourcePort = sourcePort;
         this.destPort = destPort;
         this.hLength = length;
@@ -38,7 +38,7 @@ public class UDPheader {
         byte[] dpBytes = changeIntToByteArray(destPort);
         byte[] lenBytes = changeIntToByteArray(hLength);
         byte[] flagBytes = changeIntToByteArray(flags);
-        byte[] csBytes = changeIntToByteArray(checksum);
+        byte[] csBytes = checksum;
 
         return combineHeaderParts(spBytes, dpBytes, lenBytes, flagBytes, csBytes);
     }

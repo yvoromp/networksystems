@@ -16,4 +16,10 @@ public interface terminalActions {
     //gives the list on own computer
     String FILES = "files";
 
+    // download file ex.: download 4
+    String DOWNLOAD = "download";
+
+    //upload file ex.: upload 3
+    String UPLOAD = "upload";
+
 }

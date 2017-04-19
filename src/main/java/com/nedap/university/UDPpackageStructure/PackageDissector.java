@@ -32,15 +32,8 @@ public class PackageDissector {
         separateHeaderValues(headerPart);
         checkFlags(fPart);
 
-
-
     }
     public PackageDissector(){
-
-    }
-
-
-    public void disectPackage(){
 
     }
 
@@ -108,5 +101,9 @@ public class PackageDissector {
 
     public byte[] getDataPart() {
         return dataPart;
+    }
+
+    public void setDataPart(byte[] dataPart) {
+        this.dataPart = dataPart;
     }
 }

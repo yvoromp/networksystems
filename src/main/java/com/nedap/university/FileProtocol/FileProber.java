@@ -9,7 +9,9 @@ import java.util.HashMap;
 public class FileProber {
 
     private File Cfolder = new File("src/clientFolder");
-    private File Sfolder = new File("home/pi/serverFolder");
+
+    private File Sfolder = new File("home/pi/serverFolder");        //FOR REAL
+    //private File Sfolder = new File("src/clientFolder");    //FOR LOCAL TESTING
     private File[] listOfFilesOfClient = Cfolder.listFiles();
     private File[] listOfFilesOfServer = Sfolder.listFiles();
     private HashMap<Integer, String> fileMap;
@@ -23,7 +25,6 @@ public class FileProber {
         for (int i = 0; i < listOfFilesOfServer.length; i++) {
             if (listOfFilesOfServer[i].isFile()) {
                 fileMap.put(i+1,listOfFilesOfServer[i].getName());
-                System.out.println(i+1 + ".  " + listOfFilesOfServer[i].getName());
             }
         }
         return serialize(fileMap);
@@ -40,6 +41,16 @@ public class FileProber {
         }
         System.out.println(bound+ "\n");
 
+    }
+
+    public File returnFileOfMapWithFilesIfServer(int fileId){
+        HashMap<Integer,File> tempFileMap = new HashMap<>();
+        for (int i = 0; i < listOfFilesOfServer.length; i++) {
+            if (listOfFilesOfServer[i].isFile()) {
+                tempFileMap.put(i+1,listOfFilesOfServer[i]);
+            }
+        }
+        return tempFileMap.get(fileId);
     }
 
     public static byte[] serialize(HashMap<Integer, String> files) throws IOException{
@@ -81,4 +92,26 @@ public class FileProber {
         System.out.println(bound+ "\n");
     }
 
+    public File returnFileOfMapWithFilesIfClient(int fileId){
+        HashMap<Integer,File> tempFileMap = new HashMap<>();
+        for (int i = 0; i < listOfFilesOfClient.length; i++) {
+            if (listOfFilesOfClient[i].isFile()) {
+                tempFileMap.put(i+1,listOfFilesOfClient[i]);
+            }
+        }
+        return tempFileMap.get(fileId);
+    }
+
+
+    public String probeForFilenameClientMap(int fileID){
+        return listOfFilesOfClient[fileID-1].getName();
+    }
+
+    public String probeForFilenameServerMap(int fileID){
+        return fileMap.get(fileID);
+    }
+
+    public HashMap<Integer, String> getFileMap() {
+        return fileMap;
+    }
 }
