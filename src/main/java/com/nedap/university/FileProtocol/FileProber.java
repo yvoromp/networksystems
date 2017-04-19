@@ -25,7 +25,6 @@ public class FileProber {
         for (int i = 0; i < listOfFilesOfServer.length; i++) {
             if (listOfFilesOfServer[i].isFile()) {
                 fileMap.put(i+1,listOfFilesOfServer[i].getName());
-                System.out.println(i+1 + ".  " + listOfFilesOfServer[i].getName());
             }
         }
         return serialize(fileMap);

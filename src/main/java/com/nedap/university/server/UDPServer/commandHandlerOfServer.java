@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.zip.Checksum;
 
 /**
  * Created by yvo.romp on 10/04/2017.
@@ -20,6 +21,7 @@ public class commandHandlerOfServer {
     private UDPheader UDPheader;
     private packageCreator packageC;
     private PackageDissector packageD;
+    private UDPchecksum checksum;
     private UDPFlags flags;
     private FlagActions flagActions;
     private InetAddress otherIP;
@@ -27,6 +29,7 @@ public class commandHandlerOfServer {
     private int serverPort = 5555;
     private int downloadPort = 7777;
     private boolean activeDownload = false;
+    private boolean activeUpload = false;
 
     //deepCopy of packet
     private DatagramPacket deepCopyPacket;
@@ -37,6 +40,7 @@ public class commandHandlerOfServer {
         this.clientPort = clientPort;
         cutOfTheHead(receivedPacket);
         flags = new UDPFlags(this);
+        checksum = new UDPchecksum();
         server = UDPServer;
         flagActions = new FlagActions(this);
         clientSocket = UDPClientSocket;
@@ -50,10 +54,10 @@ public class commandHandlerOfServer {
         returnData = returnMessage.getBytes();
 
         if(activeDownload){
-            UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),0);
+            UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),checksum.getTotalChecksum(returnData));
 
         }else{
-            UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+            UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),checksum.getTotalChecksum(returnData));
         }
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader,returnData);
@@ -65,13 +69,13 @@ public class commandHandlerOfServer {
     public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int clientPort,byte[] serverAnswer){
         DatagramPacket returnPacket;
         if(activeDownload){
-            UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),0);
+            UDPheader = new UDPheader(downloadPort,downloadPort,5,flags.checkForFlags(),checksum.getTotalChecksum(serverAnswer));
             packageC = new packageCreator();
             serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
             returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, downloadPort);
 
         }else{
-            UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),0);
+            UDPheader = new UDPheader(serverPort,clientPort,5,flags.checkForFlags(),checksum.getTotalChecksum(serverAnswer));
             packageC = new packageCreator();
             serverAnswer = packageC.packageCreator(UDPheader,serverAnswer);
             returnPacket = new DatagramPacket(serverAnswer, serverAnswer.length, otherIPAddress, clientPort);
