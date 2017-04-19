@@ -12,4 +12,13 @@ public class ByteToIntArray {
         for (int i = 0; i < byteArray.length; intArray[i] = Integer.valueOf(byteArray[i++]));
         return intArray;
     }
+
+    public long byteArrayToInt(byte[] arr) {
+        long total = 0x00FF & arr[0];
+        for (int i = 1; i < arr.length; i++) {
+            total <<= 8;
+            total += 0X00FF & arr[i];
+        }
+        return total;
+    }
 }

@@ -4,6 +4,11 @@ import com.nedap.university.FileProtocol.FileProber;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,50 +17,32 @@ import java.util.Map;
  */
 public class getFileContents {
 
-    public Integer[] getFileContentsIfServer(int fileID){
-        //return the File on the pi that has the given file id
+    public byte[] getFileToBytesifServer(int id){
         FileProber fileProber = new FileProber();
-        File fileToSend = fileProber.returnFileOfMapWithFilesIfServer(fileID);
-        try (FileInputStream fileStream = new FileInputStream(fileToSend)) {
-            Integer[] fileContents = new Integer[(int) fileToSend.length()];
-
-            for (int i = 0; i < fileContents.length; i++) {
-                int nextByte = fileStream.read();
-                if (nextByte == -1) {
-                    throw new Exception("File size is smaller than reported");
-                }
-
-                fileContents[i] = nextByte;
-            }
-            return fileContents;
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-            System.err.println(e.getStackTrace());
-            return null;
+        File fileToSend = fileProber.returnFileOfMapWithFilesIfServer(id);
+        String name = fileToSend.getName();
+        byte[] array = new byte[0];
+        try {
+            array = Files.readAllBytes(new File("/home/pi/serverFolder",name).toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
+        return array;
     }
 
-    public Integer[] getFileContentsIfClient(int fileID){
-        //return the File on the pi that has the given file id
+    public byte[] getFileToBytesifClient(int id){
         FileProber fileProber = new FileProber();
-        File fileToSend = fileProber.returnFileOfMapWithFilesIfClient(fileID);
-        try (FileInputStream fileStream = new FileInputStream(fileToSend)) {
-            Integer[] fileContents = new Integer[(int) fileToSend.length()];
-
-            for (int i = 0; i < fileContents.length; i++) {
-                int nextByte = fileStream.read();
-                if (nextByte == -1) {
-                    throw new Exception("File size is smaller than reported");
-                }
-
-                fileContents[i] = nextByte;
-            }
-            return fileContents;
-        } catch (Exception e) {
-            System.out.println("no such file yet initialized");
-            return null;
+        File fileToSend = fileProber.returnFileOfMapWithFilesIfClient(id);
+        String name = fileToSend.getName();
+        byte[] array = new byte[0];
+        try {
+            array = Files.readAllBytes(new File("src/clientFolder/",name).toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
+        return array;
     }
+
+
+
 }

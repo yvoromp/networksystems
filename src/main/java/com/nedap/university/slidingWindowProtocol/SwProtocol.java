@@ -22,8 +22,8 @@ public class SwProtocol {
     private UDPServer server;
     private commandHandlerOfServer serverHandler;
     private commandHandlerOfClient clientHandler;
-    private Map<Integer, Integer[]> packetMap = new HashMap<>();
-    private Integer[] fileContent;
+    private Map<Integer, byte[]> packetMap = new HashMap<>();
+    private byte[] fileContent;
     private byte[] dataPart;
     private int fileID;
     private String fileIDName;
@@ -35,6 +35,7 @@ public class SwProtocol {
     private int newPacketPosition = 0;
 
     private static final int DATASIZE = 1000;
+    private boolean running = true;
 
     /**
      * if server
@@ -45,11 +46,8 @@ public class SwProtocol {
         this.server = server;
         this.serverHandler = serverHandler;
         this.dataPart = dataPart;
-        getFileContents getFileContents = new getFileContents();
-        fileID = ByteBuffer.wrap(dataPart).getInt();
+        fileID = chop(dataPart);
         System.out.println("SWFile ID:  " + fileID);
-        Integer [] fileContents = getFileContents.getFileContentsIfServer(this.fileID);
-        fileContent = fileContents;
     }
 
     /**
@@ -61,24 +59,18 @@ public class SwProtocol {
         this.client = client;
         this.clientHandler = clientHandler;
         this.dataPart = dataPart;
-        getFileContents getFileContents = new getFileContents();
-        fileID = -ByteBuffer.wrap(dataPart).getInt();
+        fileID = chop(dataPart);
         System.out.println("SWFile ID:  " + fileID);
-        Integer[] fileContents = getFileContents.getFileContentsIfClient(this.fileID);
-        fileContent = fileContents;
-        //TODO implements
-        //setDataPart(clientHandler.getPackageD().getDataPart());
     }
-
-
 
     //run the program as a sender
     public void runAsSenderIfServer(){
         System.out.println("sending files.....");
-
         //read from the input file
         int filePointer = 0;
         Set<Integer> receivedAck = new HashSet<>();
+        getFileContents getFileContents = new getFileContents();
+        fileContent = getFileContents.getFileToBytesifServer(this.fileID);
         int totalNumberOfPackets = fileContent.length / DATASIZE + 1;
         System.out.println("datasize : " + DATASIZE);
         System.out.println("total packets to send :  " + totalNumberOfPackets);
@@ -94,9 +86,10 @@ public class SwProtocol {
         //read from the input file
         int filePointer = 0;
         Set<Integer> receivedAck = new HashSet<>();
+        getFileContents getFileContents = new getFileContents();
+        fileContent = getFileContents.getFileToBytesifServer(this.fileID);
         int totalNumberOfPackets = fileContent.length / DATASIZE + 1;
         System.out.println("total packets to send :  " + totalNumberOfPackets);
-        System.out.println("contentlength : " + fileContent.length);
         System.out.println("datasize : " + DATASIZE);
         //start track and trace of packets
         TrackAndTrace trackAndTrace = new TrackAndTrace();
@@ -106,94 +99,99 @@ public class SwProtocol {
 
     public void runAsReceiverIfClient(){
         System.out.println("receiving files......");
+        int highestRecPacket = 0;
 
-        boolean keepGoing = true;
-        while(keepGoing){
-
-            Integer[] recValue = byteToIntArray.ByteToIntArray(dataPart);
-            int packetIndexNumber = recValue[0].intValue();
-            //TODO [1] & [2] (ack & seq)
+            int packetIndexNumber = (chop(dataPart));
             System.out.println("Received packet, length = "+dataPart.length+"  first byte = "+packetIndexNumber);
+
+            //check for fin
+            if(packetMap.keySet().contains(-packetIndexNumber) && packetMap.keySet().size() == -packetIndexNumber){
+                System.out.println("all packets received have been received!!");
+                buildFileIfClient();
+                running = false;
+                return;
+            }
 
             //append the packet's data part - header to the fileContentsArray
             if(packetIndexNumber > highestRecPacket){
                 highestRecPacket = packetIndexNumber;
             }
             if(!packetMap.keySet().contains(packetIndexNumber)){
-                Integer[] packetData = byteToIntArray.ByteToIntArray(dataPart);
-                packetData = Arrays.copyOfRange(packetData,1,packetData.length);
-                packetMap.put(packetIndexNumber,packetData);
+                byte[] filePart = new byte[dataPart.length-4];
+                System.arraycopy(dataPart,4,filePart,0,filePart.length);
+                packetMap.put(packetIndexNumber,filePart);
             }
             sendAcknowledgementIfClient(packetIndexNumber);
 
             if(!allPacketsReceived(packetMap,highestRecPacket)&& packetMap.keySet().size() == Collections.max(packetMap.keySet())){
                 System.out.println("all packets received!!");
-                keepGoing = false;
-                buildFile();
+                buildFileIfClient();
             }
-             //wait 10ms before trying again
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    keepGoing = false;
-                }
-
-        }
 
     }
 
     public void runAsReceiverIfServer(){
         System.out.println("receiving files......");
         int highestRecPacket = 0;
-        int newPacketPosition = 0;
-
-        boolean keepGoing = true;
-        while(keepGoing){
-            int packetIndexNumber = Integer.valueOf(dataPart[0]);
-            //TODO [1] & [2] (ack & seq)
+            int packetIndexNumber = (chop(dataPart));
             System.out.println("Received packet, length = "+dataPart.length+"  first byte = "+packetIndexNumber);
+
+            //check for fin
+            if(packetMap.keySet().contains(-packetIndexNumber) && packetMap.keySet().size() == -packetIndexNumber){
+                System.out.println("all the packets have been received!!");
+                buildFileIfServer();
+                running = false;
+                return;
+            }
 
             //append the packet's data part - header to the fileContentsArray
             if(packetIndexNumber > highestRecPacket){
                 highestRecPacket = packetIndexNumber;
             }
             if(!packetMap.keySet().contains(packetIndexNumber)){
-                Integer[] packetData = byteToIntArray.ByteToIntArray(dataPart);
-                packetData = Arrays.copyOfRange(packetData,1,packetData.length);
-                packetMap.put(packetIndexNumber,packetData);
+                byte[] filePart = new byte[0];
+                System.arraycopy(dataPart,4,filePart,0,dataPart.length-4);
+                packetMap.put(packetIndexNumber,filePart);
             }
             sendAcknowledgementIfServer(packetIndexNumber);
 
             if(!allPacketsReceived(packetMap,highestRecPacket)&& packetMap.keySet().size() == Collections.max(packetMap.keySet())){
                 System.out.println("all packets received!!");
-                keepGoing = false;
-            }
-            //wait 10ms before trying again
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                keepGoing = false;
+                buildFileIfServer();
             }
 
-        }
-        buildFile();
+
+
     }
 
-    private boolean allPacketsReceived(Map<Integer, Integer[]> packetMap, int highestRecPacket) {
+    private boolean allPacketsReceived(Map<Integer, byte[]> packetMap, int highestRecPacket) {
         //check if all packets are received
-           boolean allPacketsReceived = false;
+           boolean allPacketsReceived = true;
             for (int i = 0; i < highestRecPacket; i++) {
-                if (packetMap.keySet().contains(i) && packetMap.get(highestRecPacket).length < DATASIZE) {
-                    allPacketsReceived = true;
+                if (!packetMap.keySet().contains(i) && packetMap.get(highestRecPacket).length < DATASIZE) {
+                    allPacketsReceived = false;
                 }
             }
             return allPacketsReceived;
 
     }
 
-    private void buildFile(){
+    private void buildFileIfClient(){
         int newPacketPosition = 0;
-        Integer [] fileContents = new Integer [0];
+        byte[] fileContents = new byte[0];
+        for (int index = 1; index <= packetMap.size(); index++) {
+            int datalen = packetMap.get(index).length;
+            fileContents = Arrays.copyOf(fileContents, newPacketPosition + datalen);
+            System.arraycopy(packetMap.get(index), 0, fileContents,newPacketPosition, datalen);
+            newPacketPosition = newPacketPosition + packetMap.get(index).length;
+        }
+        //write as file to outputMap
+        concatToFileIfClient(fileContents,fileIDName);
+    }
+
+    private void buildFileIfServer(){
+        int newPacketPosition = 0;
+        byte[] fileContents = new byte[0];
         for (int index = 1; index <= packetMap.size(); index++) {
             int datalen = packetMap.get(index).length;
             fileContents = Arrays.copyOf(fileContents, newPacketPosition + datalen);
@@ -201,30 +199,38 @@ public class SwProtocol {
             newPacketPosition = newPacketPosition + packetMap.get(index).length;
         }
         //write as file to outputMap
-        concatToFileIfClient(fileContents,fileIDName);
+        concatToFileIfServer(fileContents,fileIDName);
     }
 
     private void sendAcknowledgementIfClient(int packetIndexNumber) {
-        Integer[] ackPacket = createAckPacket(packetIndexNumber);
-        byte[] packet = intToByteArray.changeIntegerArrayToByteArray(ackPacket);
+        byte[] packet = intToByteArray.changeIntToByteArray(packetIndexNumber);
         sendToOtherLayerIfClient(packet);
         System.out.println("Send ACK for received packetnumber = " + packetIndexNumber);
     }
 
     private void sendAcknowledgementIfServer(int packetIndexNumber) {
-        Integer[] ackPacket = createAckPacket(packetIndexNumber);
-        byte[] packet = intToByteArray.changeIntegerArrayToByteArray(ackPacket);
+        byte[] packet = intToByteArray.changeIntToByteArray(packetIndexNumber);
         sendToOtherLayerIfServer(packet);
         System.out.println("Send ACK for received packetnumber = " + packetIndexNumber);
     }
 
-    private void concatToFileIfClient(Integer[] fileContent, String id){
-        SetFileContents.setFileContents(fileContent,id);
+    private void concatToFileIfClient(byte[] fileContent, String id){
+
+        SetFileContents setFileContents = new SetFileContents();
+        setFileContents.setByteArrToFileClient(fileContent,id);
+
     }
 
-    private Integer[] createAckPacket(int packetIndexNumber){
-        return new Integer[]{packetIndexNumber};
+    private void concatToFileIfServer(byte[] fileContent, String id){
+
+        SetFileContents setFileContents = new SetFileContents();
+        setFileContents.setByteArrToFileServer(fileContent,id);
+
     }
+
+//    private Integer[] createAckPacket(int packetIndexNumber){
+//        return new Integer[]{packetIndexNumber};
+//    }
 
     public void sendToOtherLayerIfClient(byte[] packet){
         clientHandler.setActiveDownload(true);
@@ -238,16 +244,6 @@ public class SwProtocol {
         serverHandler.sendDatagramPacket(totalPacket);
     }
 
-    //sets the network/UDP layer implementation for client
-    public void setNetworkLayer(UDPClient udpClient){
-        client = udpClient;
-    }
-
-    //sets the network/UDP layer implementation for server
-    public void setNetworkLayer(UDPServer udpServer){
-        server = udpServer;
-    }
-
     public UDPClient getClient() {
         return client;
     }
@@ -256,12 +252,21 @@ public class SwProtocol {
         return server;
     }
 
-    public int getFileID() {
-        return fileID;
-    }
-
     public void setFileID(int fileID) {
         this.fileID = fileID;
+    }
+
+    private static int chop(byte[] receivedDatagramData){
+        byte[] result = new byte[4];
+        System.arraycopy(receivedDatagramData,20, result,0, 4);
+        System.out.println("chopped" + Arrays.toString(result));
+        ByteToIntArray byteToIntArray = new ByteToIntArray();
+        return (int) byteToIntArray.byteArrayToInt(result);
+
+    }
+
+    public int getFileID() {
+        return fileID;
     }
 
     public commandHandlerOfServer getServerHandler() {
@@ -278,5 +283,9 @@ public class SwProtocol {
 
     public void setDataPart(byte[] dataPart) {
         this.dataPart = dataPart;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 }
