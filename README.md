@@ -1,3 +1,21 @@
+Start the mainServer on the PI
+start the mainClient on the Computer
+
+commands
+
+"files:  - gives list of clientfolder
+"ls"     - gives list from the server
+after that you can:
+"download i"  -starts download of given i from server
+"upload i".   -starts upload of file i to server
+
+
+
+
+
+
+
+
 Nedap Module 2 - HaveSomePi
 
 Goal: create a wireless storage medium, with reliable file transfer using the UDP protocol.
