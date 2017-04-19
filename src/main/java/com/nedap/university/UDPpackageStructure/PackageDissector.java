@@ -37,11 +37,6 @@ public class PackageDissector {
 
     }
 
-
-    public void disectPackage(){
-
-    }
-
     private void separateHeader(byte[] totalData){
         byte[] headerPart = new byte[20];
         int dataLength = totalData.length-headerPart.length;
@@ -106,5 +101,9 @@ public class PackageDissector {
 
     public byte[] getDataPart() {
         return dataPart;
+    }
+
+    public void setDataPart(byte[] dataPart) {
+        this.dataPart = dataPart;
     }
 }
