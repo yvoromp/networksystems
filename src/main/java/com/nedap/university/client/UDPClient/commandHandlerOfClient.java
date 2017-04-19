@@ -3,7 +3,9 @@ package com.nedap.university.client.UDPClient;
 import com.nedap.university.FileProtocol.FileProber;
 import com.nedap.university.UDPpackageStructure.*;
 import com.nedap.university.slidingWindowProtocol.ReceiverThread;
+import com.nedap.university.slidingWindowProtocol.SenderThread;
 import com.nedap.university.utils.IntToByteArray;
+import com.nedap.university.utils.getFileContents;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -25,6 +27,7 @@ public class commandHandlerOfClient {
     private int serverPort;
     private UDPClient client;
     private UDPheader UDPheader;
+    private UDPchecksum udPchecksum = new UDPchecksum();
     private packageCreator packageC;
     private PackageDissector packageD;
     private UDPFlags flags;
@@ -47,37 +50,22 @@ public class commandHandlerOfClient {
         client = UDPclient;
         serverSocket = UDPServerSocket;
         flags = new UDPFlags(this);
+        udPchecksum = new UDPchecksum();
         flagActions = new FlagActions(this);
         flagActions.takeFlagActions(UDPclient, receivedPacket, otherIPAddress, serverPort, UDPServerSocket);
 
-    }
-
-    //make a new datagram packet to send
-    public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int serverPort, String clientAnswer) {
-        byte[] returnData;
-        String returnMessage = clientAnswer;
-        returnData = returnMessage.getBytes();
-        if(activeDownload){
-            UDPheader = new UDPheader(downloadPort, serverPort, 5, flags.checkForFlags(), 0);
-        }else{
-            UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
-        }
-        packageC = new packageCreator();
-        returnData = packageC.packageCreator(UDPheader, returnData);
-        DatagramPacket returnPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, serverPort);
-        return returnPacket;
     }
 
     //make a new datagram packet to send with byteArray as data
     public DatagramPacket makeDatagramPacket(InetAddress otherIPAddress, int serverPort,byte[] clientAnswer){
         DatagramPacket returnPacket;
         if(activeDownload){
-            UDPheader = new UDPheader(downloadPort, downloadPort, 5, flags.checkForFlags(), 0);
+            UDPheader = new UDPheader(downloadPort, downloadPort, 5, flags.checkForFlags(), udPchecksum.getTotalChecksum(clientAnswer));
             packageC = new packageCreator();
             clientAnswer = packageC.packageCreator(UDPheader,clientAnswer);
             returnPacket = new DatagramPacket(clientAnswer, clientAnswer.length, otherIPAddress, downloadPort);
         }else{
-            UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+            UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), udPchecksum.getTotalChecksum(clientAnswer));
             packageC = new packageCreator();
             clientAnswer = packageC.packageCreator(UDPheader,clientAnswer);
             returnPacket = new DatagramPacket(clientAnswer, clientAnswer.length, otherIPAddress, serverPort);
@@ -114,7 +102,7 @@ public class commandHandlerOfClient {
         flags = new UDPFlags(this);
         flags.setBC();
 
-        UDPheader = new UDPheader(clientPort, clientPortNumber, 5, flags.checkForFlags(), 0);
+        UDPheader = new UDPheader(clientPort, clientPortNumber, 5, flags.checkForFlags(), udPchecksum.getTotalChecksum(returnData));
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, broadcastIPAddress, clientPort);
@@ -132,7 +120,7 @@ public class commandHandlerOfClient {
         flags = new UDPFlags(this);
         flags.setRequest();
 
-        UDPheader = new UDPheader(clientPort, clientPort, 5, flags.checkForFlags(), 0);
+        UDPheader = new UDPheader(clientPort, clientPort, 5, flags.checkForFlags(), udPchecksum.getTotalChecksum(returnData));
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, broadcastIPAddress, clientPort);
@@ -161,10 +149,7 @@ public class commandHandlerOfClient {
         byte[] returnData = intToByte.changeIntToByteArray(fileID);
         flags = new UDPFlags(this);
         flags.setReqAnswer();
-
-        ReceiverThread receiverThread = new ReceiverThread(client,client.getCommandHandlerOfClient(),packageD,flags,fileName);
-        receiverThread.start();
-        UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+        UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), udPchecksum.getTotalChecksum(returnData));
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
         DatagramPacket addressedPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
@@ -173,30 +158,39 @@ public class commandHandlerOfClient {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        ReceiverThread receiverThread = new ReceiverThread(client,client.getCommandHandlerOfClient(),packageD,flags,fileName);
+        receiverThread.start();
     }
 
     public void sendUploadMessage(int fileID){
-        System.out.println("Send upload request...");
+        sendNewPortMessage(fileID);
+    }
+
+    public void sendNewPortMessage(int fileID){
         IntToByteArray intToByteArray = new IntToByteArray();
-        byte[] returnData = intToByteArray.changeIntToByteArray(-fileID);
-        flags = new UDPFlags(this);
-        flags.setReqAnswer();
+        FileProber clientFiles = new FileProber();
+        byte[] iDArr = intToByteArray.changeIntToByteArray(fileID);
+        String changedFilename = clientFiles.probeForFilenameClientMap(fileID).replaceAll("[^a-zA-Z0-9_\\-.]","");
+        changedFilename = changedFilename.toLowerCase();
+        byte[] fileName = changedFilename.getBytes();
+        byte[] returnData = new byte[iDArr.length + fileName.length];
+        System.arraycopy(iDArr,0,returnData,0,iDArr.length);
+        System.arraycopy(fileName,0,returnData,iDArr.length,fileName.length);
 
-        //set the download on active to seperate flagactions
         setActiveUpload(true);
+        flags = new UDPFlags(this);
+        flags.setNewPort();
 
-        UDPheader = new UDPheader(clientPort, serverPort, 5, flags.checkForFlags(), 0);
+        UDPheader = new UDPheader(clientPort, downloadPort, 5, flags.checkForFlags(), udPchecksum.getTotalChecksum(returnData));
         packageC = new packageCreator();
         returnData = packageC.packageCreator(UDPheader, returnData);
-        DatagramPacket broadcastPacket = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
+        DatagramPacket addressedPackage = new DatagramPacket(returnData, returnData.length, otherIPAddress, clientPort);
         try {
-            serverSocket.send(broadcastPacket);
+            serverSocket.send(addressedPackage);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
 
     //cuts of the header and leaves the datapart
     public void cutOfTheHead(DatagramPacket packet) {
@@ -204,15 +198,9 @@ public class commandHandlerOfClient {
     }
 
     public void makeDeepCopyOfPacket(DatagramPacket packetToSend) {
-        deepCopyPacket = packetToSend;
-    }
-
-    public DatagramPacket getDeepCopyPacket() {
-        return deepCopyPacket;
-    }
-
-    public packageCreator getPackageC() {
-        return packageC;
+        int port = packetToSend.getPort();
+        byte[] data = packetToSend.getData();
+        deepCopyPacket = new DatagramPacket(data,port);
     }
 
     public PackageDissector getPackageD() {
@@ -223,20 +211,8 @@ public class commandHandlerOfClient {
         return flags;
     }
 
-    public boolean isBroadcast() {
-        return isBroadcast;
-    }
-
-    public InetAddress getBroadcastIPAddress() {
-        return broadcastIPAddress;
-    }
-
     public InetAddress getOtherIPAddress() {
         return otherIPAddress;
-    }
-
-    public int getClientPort() {
-        return clientPort;
     }
 
     public int getDownloadPort() {

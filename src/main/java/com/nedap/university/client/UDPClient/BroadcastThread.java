@@ -22,24 +22,19 @@ public class BroadcastThread extends Thread{
 
         //creating clientSocket that will be used to contact UDPServer
         MulticastSocket UDPClientSocket = null;
-
         //creating the server address
         InetAddress broadcastIPAddress = null;
-
         try {
             UDPClientSocket = new MulticastSocket(clientPortNumber);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         //find the IP address of the server from its name
         try {
             broadcastIPAddress = InetAddress.getByName(serverHostName);
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-
-
         //create a commandHandlerOfClient for received packets
         commandHandlerOfClient = new commandHandlerOfClient();
         setBroadcastIP(broadcastIPAddress);
